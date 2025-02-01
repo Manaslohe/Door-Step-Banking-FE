@@ -110,12 +110,15 @@ const LandingPage = () => {
       }
       
       const verificationData = JSON.parse(tempData);
+      console.log('Verification data:', verificationData);
       
       if (otp === '000000') {
         const loginPayload = {
           email: verificationData.user.email,
-          password: verificationData.user.phone
+          password: verificationData.user.phone // Using phone as password
         };
+
+        console.log('Attempting login with:', loginPayload);
 
         const loginResponse = await axios.post(
           `${import.meta.env.VITE_API_URL}/users/login`,
@@ -124,15 +127,13 @@ const LandingPage = () => {
         );
 
         if (loginResponse.data.success) {
-          // Store both user data and token
           localStorage.setItem('userData', JSON.stringify(loginResponse.data.user));
-          localStorage.setItem('token', loginResponse.data.token); // Add this line
           setSuccess(true);
           
           setTimeout(() => {
             localStorage.removeItem('tempVerification');
-            navigate('/dashboard');
-          }, 1000);
+            navigate('/dashboard', { replace: true });
+          }, 1500);
         } else {
           throw new Error(loginResponse.data.message || 'Login failed');
         }
