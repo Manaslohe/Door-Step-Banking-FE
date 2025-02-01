@@ -4,11 +4,40 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const api = axios.create({
   baseURL: API_URL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
-  },
-  withCredentials: true // Required for cookies/sessions
+    'Accept': 'application/json'
+  }
 });
+
+// Add request interceptor for CORS
+api.interceptors.request.use((config) => {
+  // Add origin header
+  config.headers['Origin'] = window.location.origin;
+  
+  // Handle preflight
+  if (config.method === 'options') {
+    config.headers['Access-Control-Request-Method'] = config.method;
+  }
+  
+  return config;
+}, (error) => {
+  return Promise.reject(error);
+});
+
+// Add response interceptor for better error handling
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error('API Error:', {
+      status: error.response?.status,
+      message: error.message,
+      url: error.config?.url
+    });
+    return Promise.reject(error);
+  }
+);
 
 // Update error handling
 const handleApiError = (error) => {
@@ -71,6 +100,18 @@ api.interceptors.request.use(config => {
   });
   return config;
 });
+
+// Add request interceptor
+api.interceptors.request.use(
+  (config) => {
+    // Add origin header
+    config.headers['Origin'] = window.location.origin;
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 // Add response interceptor logging
 api.interceptors.response.use(
