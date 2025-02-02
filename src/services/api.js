@@ -74,6 +74,15 @@ api.interceptors.request.use(config => {
   return config;
 });
 
+// Special handling for PAN verification
+api.interceptors.request.use(config => {
+  if (config.url.includes('verify-pan')) {
+    config.timeout = 60000; // 60 seconds for PAN verification
+    config.retries = 2; // Allow 2 retries
+  }
+  return config;
+});
+
 // Add response interceptor logging
 api.interceptors.response.use(
   response => {
@@ -86,6 +95,29 @@ api.interceptors.response.use(
   },
   error => {
     handleApiError(error);
+  }
+);
+
+// Add retry logic for 504 errors
+api.interceptors.response.use(
+  response => response,
+  async error => {
+    const { config } = error;
+    if (!config) return Promise.reject(error);
+
+    config.retryCount = config.retryCount || 0;
+
+    if (error.response?.status === 504 && config.retryCount < 2) {
+      config.retryCount += 1;
+      console.log(`Retrying request (${config.retryCount}/2):`, config.url);
+      
+      // Add delay between retries
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      return api(config);
+    }
+
+    return Promise.reject(error);
   }
 );
 
