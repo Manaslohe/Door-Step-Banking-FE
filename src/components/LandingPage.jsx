@@ -43,13 +43,23 @@ const LandingPage = () => {
     }
   }, [location]);
 
-  // Add effect to check if user is already logged in
+  // Update useEffect to prevent navigation loop
   useEffect(() => {
-    const userData = localStorage.getItem('userData');
-    if (userData) {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [navigate]);
+    const checkAuth = () => {
+      const userData = localStorage.getItem('userData');
+      const isLoggedIn = localStorage.getItem('isLoggedIn');
+      
+      if (userData && isLoggedIn === 'true') {
+        // Use replace to prevent navigation history
+        navigate('/dashboard', { replace: true });
+        return true;
+      }
+      return false;
+    };
+
+    // Only check once on mount
+    checkAuth();
+  }, []); // Empty dependency array
 
   const handleLoginClick = () => {
     const mainContent = document.querySelector('.main-content');
@@ -100,6 +110,8 @@ const LandingPage = () => {
 
   const handleOtpSubmit = async (e) => {
     e.preventDefault();
+    if (loading || success) return; // Prevent multiple submissions
+    
     setError('');
     setLoading(true);
     
@@ -110,7 +122,6 @@ const LandingPage = () => {
       }
       
       const verificationData = JSON.parse(tempData);
-      console.log('Verification data:', verificationData);
       
       if (otp === '000000') {
         const loginPayload = {
@@ -118,22 +129,27 @@ const LandingPage = () => {
           password: verificationData.user.phone // Using phone as password
         };
 
-        console.log('Attempting login with:', loginPayload);
-
         const loginResponse = await axios.post(
           `${import.meta.env.VITE_API_URL}/users/login`,
-          loginPayload,
-          { headers: { 'Content-Type': 'application/json' } }
+          loginPayload
         );
 
         if (loginResponse.data.success) {
-          localStorage.setItem('userData', JSON.stringify(loginResponse.data.user));
           setSuccess(true);
           
+          // Store data after successful login
+          localStorage.setItem('userData', JSON.stringify(loginResponse.data.user));
+          localStorage.setItem('isLoggedIn', 'true');
+          
+          // Clean up and navigate
           setTimeout(() => {
             localStorage.removeItem('tempVerification');
-            navigate('/dashboard', { replace: true });
-          }, 1500);
+            // Use replace to prevent back button issues
+            navigate('/dashboard', { 
+              replace: true,
+              state: { authenticated: true }
+            });
+          }, 1000);
         } else {
           throw new Error(loginResponse.data.message || 'Login failed');
         }
@@ -143,8 +159,10 @@ const LandingPage = () => {
     } catch (err) {
       console.error('Login error:', err);
       setError(err.response?.data?.message || err.message);
+      // Clear any partial data on error
+      localStorage.removeItem('tempVerification');
     } finally {
-      setLoading(false);
+      if (!success) setLoading(false);
     }
   };
 
