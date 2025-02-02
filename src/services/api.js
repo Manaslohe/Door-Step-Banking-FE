@@ -1,43 +1,17 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const isDevelopment = import.meta.env.MODE === 'development';
+const API_URL = isDevelopment 
+  ? 'http://localhost:5000/api'
+  : 'https://saralbe.vercel.app/api';
 
 const api = axios.create({
   baseURL: API_URL,
   withCredentials: true,
   headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json'
+    'Content-Type': 'application/json'
   }
 });
-
-// Add request interceptor for CORS
-api.interceptors.request.use((config) => {
-  // Add origin header
-  config.headers['Origin'] = window.location.origin;
-  
-  // Handle preflight
-  if (config.method === 'options') {
-    config.headers['Access-Control-Request-Method'] = config.method;
-  }
-  
-  return config;
-}, (error) => {
-  return Promise.reject(error);
-});
-
-// Add response interceptor for better error handling
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    console.error('API Error:', {
-      status: error.response?.status,
-      message: error.message,
-      url: error.config?.url
-    });
-    return Promise.reject(error);
-  }
-);
 
 // Update error handling
 const handleApiError = (error) => {
@@ -91,27 +65,14 @@ api.interceptors.request.use(config => {
   return Promise.reject(error);
 });
 
-// Add request interceptor logging
+// Add environment-specific logging
 api.interceptors.request.use(config => {
-  console.log('Making request:', {
+  console.log(`[${isDevelopment ? 'DEV' : 'PROD'}] Making request:`, {
     url: config.url,
-    method: config.method,
-    headers: config.headers
+    baseURL: config.baseURL
   });
   return config;
 });
-
-// Add request interceptor
-api.interceptors.request.use(
-  (config) => {
-    // Add origin header
-    config.headers['Origin'] = window.location.origin;
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
 
 // Add response interceptor logging
 api.interceptors.response.use(
@@ -174,27 +135,10 @@ export const login = async (credentials) => {
 
 export const getMe = async () => {
   try {
-    const userData = localStorage.getItem('userData');
-    if (!userData) {
-      throw new Error('No user data found');
-    }
-
-    const user = JSON.parse(userData);
-    const response = await api.get('/users/me', {
-      headers: {
-        'user-id': user._id
-      }
-    });
-
-    if (response.data.success) {
-      return response.data;
-    } else {
-      throw new Error(response.data.message);
-    }
+    const response = await api.get('/users/me');
+    return response.data;
   } catch (error) {
-    console.error('Error fetching user data:', error);
-    localStorage.removeItem('userData'); // Clear invalid data
-    throw error.response?.data || error;
+    throw error.response?.data || error.message;
   }
 };
 

@@ -17,7 +17,7 @@ import {
 import QuoteBar from './Login/QuoteBar';
 import NewsTicker from './Login/NewsTicker';
 import RegisterTransition from './Login/RegisterTransition';
-import axios from 'axios';
+import api from '../services/api';
 import LoginTypeSlider from './Login/LoginTypeSlider';
 
 const LandingPage = () => {
@@ -43,23 +43,13 @@ const LandingPage = () => {
     }
   }, [location]);
 
-  // Update useEffect to prevent navigation loop
+  // Add effect to check if user is already logged in
   useEffect(() => {
-    const checkAuth = () => {
-      const userData = localStorage.getItem('userData');
-      const isLoggedIn = localStorage.getItem('isLoggedIn');
-      
-      if (userData && isLoggedIn === 'true') {
-        // Use replace to prevent navigation history
-        navigate('/dashboard', { replace: true });
-        return true;
-      }
-      return false;
-    };
-
-    // Only check once on mount
-    checkAuth();
-  }, []); // Empty dependency array
+    const userData = localStorage.getItem('userData');
+    if (userData) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [navigate]);
 
   const handleLoginClick = () => {
     const mainContent = document.querySelector('.main-content');
@@ -90,7 +80,7 @@ const LandingPage = () => {
     setLoading(true);
     try {
       console.log('Verifying PAN:', panNumber);
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/users/verify-pan`, {
+      const response = await api.post('/users/verify-pan', {
         pan: panNumber.toUpperCase()
       });
       
@@ -103,15 +93,13 @@ const LandingPage = () => {
       }
     } catch (error) {
       console.error('PAN verification error:', error);
-      setError(error.response?.data?.message || 'PAN number not found');
+      setError(error.response?.data?.message || 'Failed to verify PAN');
     }
     setLoading(false);
   };
 
   const handleOtpSubmit = async (e) => {
     e.preventDefault();
-    if (loading || success) return; // Prevent multiple submissions
-    
     setError('');
     setLoading(true);
     
@@ -126,29 +114,20 @@ const LandingPage = () => {
       if (otp === '000000') {
         const loginPayload = {
           email: verificationData.user.email,
-          password: verificationData.user.phone // Using phone as password
+          password: verificationData.user.phone
         };
 
-        const loginResponse = await axios.post(
-          `${import.meta.env.VITE_API_URL}/users/login`,
-          loginPayload
-        );
+        const loginResponse = await api.post('/users/login', loginPayload);
 
         if (loginResponse.data.success) {
+          // Store both user data and token
+          localStorage.setItem('userData', JSON.stringify(loginResponse.data.user));
+          localStorage.setItem('token', loginResponse.data.token); // Add this line
           setSuccess(true);
           
-          // Store data after successful login
-          localStorage.setItem('userData', JSON.stringify(loginResponse.data.user));
-          localStorage.setItem('isLoggedIn', 'true');
-          
-          // Clean up and navigate
           setTimeout(() => {
             localStorage.removeItem('tempVerification');
-            // Use replace to prevent back button issues
-            navigate('/dashboard', { 
-              replace: true,
-              state: { authenticated: true }
-            });
+            navigate('/dashboard');
           }, 1000);
         } else {
           throw new Error(loginResponse.data.message || 'Login failed');
@@ -159,10 +138,8 @@ const LandingPage = () => {
     } catch (err) {
       console.error('Login error:', err);
       setError(err.response?.data?.message || err.message);
-      // Clear any partial data on error
-      localStorage.removeItem('tempVerification');
     } finally {
-      if (!success) setLoading(false);
+      setLoading(false);
     }
   };
 
