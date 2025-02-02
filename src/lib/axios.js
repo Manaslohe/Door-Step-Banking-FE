@@ -56,6 +56,15 @@ api.interceptors.response.use(
   async error => {
     const originalRequest = error.config;
 
+    // Special handling for PAN verification
+    if (originalRequest.url.includes('/verify-pan')) {
+      // Retry immediately for PAN verification
+      if (!originalRequest._retry && (error.response?.status === 504 || error.code === 'ECONNABORTED')) {
+        originalRequest._retry = true;
+        return api(originalRequest);
+      }
+    }
+
     // Maximum retry attempts
     const maxRetries = 3;
     originalRequest.retryCount = originalRequest.retryCount || 0;
