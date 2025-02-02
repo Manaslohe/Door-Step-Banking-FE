@@ -145,8 +145,14 @@ export const getMe = async () => {
 export const logout = async () => {
   try {
     const response = await api.post('/users/logout');
+    // Clear local storage regardless of response
+    localStorage.removeItem('userData');
+    localStorage.removeItem('token');
     return response.data;
   } catch (error) {
+    // Still clear storage even if API call fails
+    localStorage.removeItem('userData');
+    localStorage.removeItem('token');
     throw error.response?.data || error.message;
   }
 };
