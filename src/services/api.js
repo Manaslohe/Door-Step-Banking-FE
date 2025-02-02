@@ -174,10 +174,27 @@ export const login = async (credentials) => {
 
 export const getMe = async () => {
   try {
-    const response = await api.get('/users/me');
-    return response.data;
+    const userData = localStorage.getItem('userData');
+    if (!userData) {
+      throw new Error('No user data found');
+    }
+
+    const user = JSON.parse(userData);
+    const response = await api.get('/users/me', {
+      headers: {
+        'user-id': user._id
+      }
+    });
+
+    if (response.data.success) {
+      return response.data;
+    } else {
+      throw new Error(response.data.message);
+    }
   } catch (error) {
-    throw error.response?.data || error.message;
+    console.error('Error fetching user data:', error);
+    localStorage.removeItem('userData'); // Clear invalid data
+    throw error.response?.data || error;
   }
 };
 
