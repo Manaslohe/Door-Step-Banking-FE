@@ -12,7 +12,6 @@ import { useTranslation } from '../context/TranslationContext';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isSidebarMinimized, setSidebarMinimized] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -21,20 +20,20 @@ const Dashboard = () => {
   const { t } = useTranslation();
 
   useEffect(() => {
-    const validateAuth = () => {
-      const userData = localStorage.getItem('userData');
-      const isLoggedIn = localStorage.getItem('isLoggedIn');
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('userData');
+    
+    if (!token || !userData) {
+      navigate('/', { replace: true });
+      return;
+    }
 
-      if (!userData || !isLoggedIn) {
-        localStorage.clear();
-        navigate('/', { replace: true });
-        return false;
-      }
-      return true;
-    };
-
-    if (validateAuth()) {
-      setIsLoading(false);
+    // Parse user data to make sure it's valid
+    try {
+      JSON.parse(userData);
+    } catch (e) {
+      localStorage.clear();
+      navigate('/', { replace: true });
     }
   }, [navigate]);
 
@@ -87,15 +86,6 @@ const Dashboard = () => {
       path: '/pricing-structure'
     }
   ];
-
-  // Show loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">

@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, useNavigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import LandingPage from './components/LandingPage'
 import Register from './components/Login/Register'
 import Dashboard from './components/Dashboard'
@@ -20,7 +20,6 @@ import AdminDashboard from './components/Admin/AdminDashboard';
 import AgentLogin from './components/Agent/AgentLogin';
 import AgentDashboard from './components/Agent/AgentDashboard';
 import ManageAgents from './components/Admin/ManageAgents';
-import { useState, useEffect } from 'react';
 
 const App = () => {
   return (
@@ -65,33 +64,14 @@ const App = () => {
   )
 }
 
-// Simplified ProtectedRoute component
+// Updated ProtectedRoute component using Outlet
 const ProtectedRoute = () => {
-  const [isValidating, setIsValidating] = useState(true);
-  const navigate = useNavigate();
+  const token = localStorage.getItem('token');
+  const userData = localStorage.getItem('userData');
 
-  useEffect(() => {
-    const validateAuth = () => {
-      const userData = localStorage.getItem('userData');
-      const isLoggedIn = localStorage.getItem('isLoggedIn');
-
-      if (!userData || !isLoggedIn) {
-        localStorage.clear();
-        navigate('/', { replace: true });
-        return;
-      }
-      setIsValidating(false);
-    };
-
-    validateAuth();
-  }, [navigate]);
-
-  if (isValidating) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
-      </div>
-    );
+  if (!token || !userData) {
+    localStorage.clear(); // Clear any partial data
+    return <Navigate to="/" replace />;
   }
 
   return <Outlet />;

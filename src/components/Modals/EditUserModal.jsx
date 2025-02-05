@@ -186,8 +186,8 @@ export const EditUserModal = ({ user, isOpen, onClose, onUpdate }) => {
             Secure Information
           </h4>
           <div className="grid grid-cols-2 gap-3">
-            <InfoField label="Aadhaar" value={user?.aadhaar} icon={Lock} sensitive />
-            <InfoField label="PAN" value={user?.pan} icon={Lock} sensitive />
+            <InfoField label="Aadhaar" value={user?.aadhaar || 'Not available'} icon={Lock} sensitive />
+            <InfoField label="PAN" value={user?.pan || 'Not available'} icon={Lock} sensitive />
           </div>
         </div>
       </div>
@@ -277,6 +277,18 @@ export const EditUserModal = ({ user, isOpen, onClose, onUpdate }) => {
               onChange={handleChange}
               className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
+            />
+          </div>
+
+          {/* Add Aadhaar display (read-only) */}
+          <div className="space-y-2">
+            <label className="block text-base font-medium text-gray-700">Aadhaar Number (Read-only)</label>
+            <input
+              type="text"
+              value={user?.aadhaar || 'Not available'}
+              className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg bg-gray-50"
+              disabled
+              readOnly
             />
           </div>
         </div>

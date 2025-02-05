@@ -8,6 +8,133 @@ import KycVerificationForm from './KycVerificationForm';
 import { registerCustomer } from '../../services/api';
 import imageCompression from 'browser-image-compression';
 
+// New PersonalDetailsForm component
+const PersonalDetailsForm = React.memo(({ 
+  formData, 
+  onSubmit, 
+  onChange, 
+  onPhotoChange, 
+  photoPreview, 
+  error, 
+  isSubmitting 
+}) => (
+  <form onSubmit={onSubmit} className="space-y-6">
+    {error && (
+      <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+        {error}
+      </div>
+    )}
+    <div className="flex items-center justify-center mb-6">
+      <div className="relative group">
+        {photoPreview ? (
+          <img src={photoPreview} alt="Preview" className="w-20 h-20 rounded-full object-cover" />
+        ) : (
+          <div className="w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center">
+            <Upload className="w-6 h-6 text-blue-400" />
+          </div>
+        )}
+        <label className="absolute bottom-0 right-0 bg-blue-600 rounded-full p-2 cursor-pointer">
+          <Upload className="w-4 h-4 text-white" />
+          <input type="file" accept="image/*" onChange={onPhotoChange} className="hidden" />
+        </label>
+      </div>
+    </div>
+
+    <div className="grid grid-cols-2 gap-4">
+      <input 
+        type="text"
+        name="firstName"
+        value={formData.firstName}
+        onChange={onChange}
+        placeholder="First Name"
+        className="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 text-sm"
+        autoComplete="given-name"
+        required
+      />
+      <input 
+        type="text"
+        name="lastName"
+        value={formData.lastName}
+        onChange={onChange}
+        placeholder="Last Name"
+        className="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 text-sm"
+        autoComplete="family-name"
+      />
+    </div>
+
+    <div className="grid grid-cols-2 gap-4">
+      <input 
+        type="email"
+        name="email"
+        value={formData.email}
+        onChange={onChange}
+        placeholder="Email Address"
+        className="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 text-sm"
+        autoComplete="email"
+      />
+      <input 
+        type="tel"
+        name="phone"
+        value={formData.phone}
+        onChange={onChange}
+        placeholder="Phone Number"
+        className="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 text-sm"
+        autoComplete="tel"
+        pattern="[0-9]*"
+        inputMode="numeric"
+        maxLength={10}
+      />
+    </div>
+
+    <div className="grid grid-cols-2 gap-4">
+      <input 
+        type="text"
+        name="aadhaar"
+        value={formData.aadhaar}
+        onChange={onChange}
+        placeholder="Aadhaar Number"
+        className="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 text-sm"
+        pattern="[0-9]*"
+        inputMode="numeric"
+        maxLength={12}
+      />
+      <input 
+        type="text"
+        name="pan"
+        value={formData.pan}
+        onChange={onChange}
+        placeholder="PAN Number"
+        className="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 text-sm"
+        maxLength={10}
+      />
+    </div>
+
+    <textarea 
+      name="address"
+      value={formData.address}
+      onChange={onChange}
+      placeholder="Complete Address"
+      rows="2"
+      className="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 text-sm"
+    />
+
+    <button 
+      type="submit"
+      disabled={isSubmitting}
+      className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 text-sm font-medium disabled:opacity-50"
+    >
+      {isSubmitting ? (
+        <span>Creating Account...</span>
+      ) : (
+        <>
+          <span>Create Account</span>
+          <ChevronRight className="w-4 h-4" />
+        </>
+      )}
+    </button>
+  </form>
+));
+
 export default function Register() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -128,128 +255,6 @@ export default function Register() {
     navigate('/', { state: { showLogin: true } });
   };
 
-  const PersonalDetailsForm = () => (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
-          {error}
-        </div>
-      )}
-      <div className="flex items-center justify-center mb-6">
-        <div className="relative group">
-          {photoPreview ? (
-            <img src={photoPreview} alt="Preview" className="w-20 h-20 rounded-full object-cover" />
-          ) : (
-            <div className="w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center">
-              <Upload className="w-6 h-6 text-blue-400" />
-            </div>
-          )}
-          <label className="absolute bottom-0 right-0 bg-blue-600 rounded-full p-2 cursor-pointer">
-            <Upload className="w-4 h-4 text-white" />
-            <input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
-          </label>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <input 
-            type="text"
-            name="firstName"
-            value={formData.firstName}
-            onChange={handleChange}
-            placeholder="First Name"
-            className="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 text-sm"
-            autoComplete="given-name"
-            required
-          />
-        </div>
-        <div>
-          <input 
-            type="text"
-            name="lastName"
-            value={formData.lastName}
-            onChange={handleChange}
-            placeholder="Last Name"
-            className="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 text-sm"
-            autoComplete="family-name"
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <input 
-          type="email"
-          name="email"
-          value={formData.email}
-          onChange={handleChange}
-          placeholder="Email Address"
-          className="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 text-sm"
-          autoComplete="email"
-        />
-        <input 
-          type="tel"
-          name="phone"
-          value={formData.phone}
-          onChange={handleChange}
-          placeholder="Phone Number"
-          className="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 text-sm"
-          autoComplete="tel"
-          pattern="[0-9]*"
-          inputMode="numeric"
-          maxLength={10}
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <input 
-          type="text"
-          name="aadhaar"
-          value={formData.aadhaar}
-          onChange={handleChange}
-          placeholder="Aadhaar Number"
-          className="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 text-sm"
-          pattern="[0-9]*"
-          inputMode="numeric"
-          maxLength={12}
-        />
-        <input 
-          type="text"
-          name="pan"
-          value={formData.pan}
-          onChange={handleChange}
-          placeholder="PAN Number"
-          className="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 text-sm"
-          maxLength={10}
-        />
-      </div>
-
-      <textarea 
-        name="address"
-        value={formData.address}
-        onChange={handleChange}
-        placeholder="Complete Address"
-        rows="2"
-        className="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 text-sm"
-      />
-
-      <button 
-        type="submit"
-        disabled={isSubmitting}
-        className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 text-sm font-medium disabled:opacity-50"
-      >
-        {isSubmitting ? (
-          <span>Creating Account...</span>
-        ) : (
-          <>
-            <span>Create Account</span>
-            <ChevronRight className="w-4 h-4" />
-          </>
-        )}
-      </button>
-    </form>
-  );
-
   if (showTransition) {
     return <RegisterTransition onComplete={handleTransitionComplete} />;
   }
@@ -303,7 +308,15 @@ export default function Register() {
             </div>
 
             {currentStep === 'personal' ? (
-              <PersonalDetailsForm />
+              <PersonalDetailsForm 
+                formData={formData}
+                onSubmit={handleSubmit}
+                onChange={handleChange}
+                onPhotoChange={handlePhotoChange}
+                photoPreview={photoPreview}
+                error={error}
+                isSubmitting={isSubmitting}
+              />
             ) : (
               <KycVerificationForm onComplete={() => setShowSuccess(true)} />
             )}

@@ -84,18 +84,24 @@ const LandingPage = () => {
         pan: panNumber.toUpperCase()
       });
       
-      if (response.data) {
-        console.log('PAN verification successful:', response.data);
+      console.log('PAN verification response:', response.data);
+      
+      if (response.data.success) {
+        // User found - proceed with OTP
         setPhoneLastDigits(response.data.phone);
         setShowOtpField(true);
         localStorage.setItem('tempVerification', JSON.stringify(response.data));
         setError('');
+      } else {
+        // User not found - show error but don't navigate
+        setError('No account found with this PAN number. Please check and try again.');
       }
     } catch (error) {
       console.error('PAN verification error:', error);
       setError(error.response?.data?.message || 'Failed to verify PAN');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleOtpSubmit = async (e) => {
@@ -110,34 +116,43 @@ const LandingPage = () => {
       }
       
       const verificationData = JSON.parse(tempData);
+      console.log('Verification data:', verificationData);
       
       if (otp === '000000') {
         const loginPayload = {
           email: verificationData.user.email,
-          password: verificationData.user.phone
+          password: verificationData.user.phone, // Use phone as password
+          pan: panNumber.toUpperCase()
         };
 
-        const loginResponse = await api.post('/users/login', loginPayload);
-
-        if (loginResponse.data.success) {
-          // Store both user data and token
-          localStorage.setItem('userData', JSON.stringify(loginResponse.data.user));
-          localStorage.setItem('token', loginResponse.data.token); // Add this line
-          setSuccess(true);
-          
-          setTimeout(() => {
-            localStorage.removeItem('tempVerification');
-            navigate('/dashboard');
-          }, 1000);
-        } else {
-          throw new Error(loginResponse.data.message || 'Login failed');
+        console.log('Sending login payload:', loginPayload);
+        
+        try {
+          const loginResponse = await api.post('/users/login', loginPayload);
+          console.log('Login response:', loginResponse.data);
+  
+          if (loginResponse.data.success) {
+            // Store user data and token
+            const { user, token } = loginResponse.data;
+            localStorage.setItem('userData', JSON.stringify(user));
+            localStorage.setItem('token', token);
+  
+            setSuccess(true);
+            setTimeout(() => {
+              localStorage.removeItem('tempVerification');
+              navigate('/dashboard');
+            }, 1000);
+          }
+        } catch (loginError) {
+          console.error('Login error:', loginError);
+          throw loginError.response?.data || loginError;
         }
       } else {
         throw new Error('Invalid OTP. Use 000000 for testing');
       }
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.response?.data?.message || err.message);
+      setError(err.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);
     }

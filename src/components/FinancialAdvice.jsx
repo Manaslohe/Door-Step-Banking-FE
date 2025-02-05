@@ -8,14 +8,15 @@ import { useTranslation } from '../context/TranslationContext';
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
-const systemContext = (language) => `You are an AI Investment Advisor. Please provide investment advice considering:
-- Current market conditions
-- Risk assessment
-- Investment horizon
-- Market trends
-Keep responses concise and professional.
-Format response as JSON with title, recommendation, description, and riskLevel fields.
-${language === 'hindi' ? 'Provide the response in Hindi language.' : 'Provide the response in English language.'}`;
+const systemContext = (language) => `You are an AI Investment Advisor. Respond ONLY with a valid JSON object containing exactly these fields:
+{
+  "title": "string",
+  "recommendation": "string",
+  "description": "string",
+  "riskLevel": "string"
+}
+Use only Low, Moderate, Medium-High, or High for riskLevel.
+${language === 'hindi' ? 'Provide the content in Hindi language.' : 'Provide the content in English language.'}`;
 
 const LoadingPulse = () => (
   <div className="space-y-2">
@@ -87,12 +88,7 @@ const FinancialAdvice = () => {
           body: JSON.stringify({
             contents: [{
               parts: [{
-                text: `${systemContext(language)}\n\nGenerate current investment advice in JSON format with fields:\n{
-                  "title": "Investment opportunity title",
-                  "recommendation": "Specific investment recommendation",
-                  "description": "Brief market analysis and reasoning",
-                  "riskLevel": "Low/Moderate/Medium-High/High"
-                }`
+                text: systemContext(language)
               }]
             }]
           })
@@ -107,12 +103,25 @@ const FinancialAdvice = () => {
       
       if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
         const adviceText = data.candidates[0].content.parts[0].text;
-        const jsonMatch = adviceText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const advice = JSON.parse(jsonMatch[0]);
+        try {
+          // Clean the response text to ensure we only parse the JSON part
+          const jsonStr = adviceText.replace(/^[\s\S]*?(\{[\s\S]*\})[\s\S]*$/, '$1');
+          const advice = JSON.parse(jsonStr);
+          
+          // Validate required fields
+          if (!advice.title || !advice.recommendation || !advice.description || !advice.riskLevel) {
+            throw new Error('Missing required fields in response');
+          }
+          
+          // Validate risk level
+          const validRiskLevels = ['Low', 'Moderate', 'Medium-High', 'High'];
+          if (!validRiskLevels.includes(advice.riskLevel)) {
+            advice.riskLevel = 'N/A';
+          }
+          
           setCurrentAdvice(advice);
-        } else {
-          throw new Error('Invalid response format');
+        } catch (parseError) {
+          throw new Error('Failed to parse response as JSON');
         }
       } else {
         throw new Error('Invalid response format');
