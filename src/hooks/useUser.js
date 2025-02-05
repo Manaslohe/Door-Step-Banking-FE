@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getMe } from '../services/api';
+import { toast } from 'react-hot-toast';
 
 export const useUser = () => {
   const [user, setUser] = useState(() => {
@@ -18,18 +19,24 @@ export const useUser = () => {
           return;
         }
 
+        const parsedUser = JSON.parse(savedUser);
+        if (!parsedUser._id) {
+          throw new Error('Invalid user data in localStorage');
+        }
+
         const response = await getMe();
         if (response.success && response.user) {
-          const userData = {
-            ...response.user,
-            photoUrl: response.user.photoUrl || '/default-avatar.png'
-          };
-          setUser(userData);
-          localStorage.setItem('userData', JSON.stringify(userData));
+          updateUser(response.user);
         }
       } catch (err) {
         console.error('Error fetching user data:', err);
         setError(err.message);
+        // Clear invalid data
+        if (err.message.includes('Invalid user data')) {
+          localStorage.removeItem('userData');
+          setUser(null);
+        }
+        toast.error('Failed to load user profile');
       } finally {
         setLoading(false);
       }
