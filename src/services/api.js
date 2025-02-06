@@ -352,4 +352,27 @@ export const verifyPAN = async (pan) => {
   }
 };
 
+export const getUserServicesByPhone = async (phone) => {
+  try {
+    // Updated to use query parameter
+    const response = await api.get('/services', {
+      params: {
+        userPhone: phone
+      }
+    });
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
+};
+
+export const getServiceDetails = async (serviceId) => {
+  try {
+    const response = await api.get(`/services/${serviceId}`);
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
+};
+
 export default api;

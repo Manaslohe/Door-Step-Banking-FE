@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   Users, Settings, BookOpen, 
   MessageSquare, DollarSign, HelpCircle,
@@ -9,6 +9,7 @@ import { useTranslation } from '../../context/TranslationContext';
 
 const Sidebar = ({ isOpen, isMinimized, isMobile, toggleSidebar }) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   
   const navItems = [
     { path: '/user-dashboard', icon: Users, text: t.userDashboard },
@@ -17,101 +18,120 @@ const Sidebar = ({ isOpen, isMinimized, isMobile, toggleSidebar }) => {
     { path: '/blog-forum', icon: MessageSquare, text: t.blogForum },
     { path: '/pricing-structure', icon: DollarSign, text: t.pricingStructure },
     { path: '/support', icon: HelpCircle, text: t.support },
-    { path: '/track-service', icon: Clock, text: 'Track Service' }, // Added track service
+    { path: '/track-service', icon: Clock, text: 'Track Service' },
   ];
 
-  if (!isOpen && isMobile) return null;
+  // Mobile-only: Hide completely when closed
+  if (isMobile && !isOpen) return null;
 
   return (
-    <div className={`
-      ${isMobile ? 'fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50' : 'relative'}
-      ${!isOpen && isMobile ? 'opacity-0 pointer-events-none' : 'opacity-100'}
-      transition-all duration-300
-    `}>
-      <div className={`
-        ${isMinimized ? 'w-24' : 'w-72'}
-        h-screen bg-gradient-to-b from-blue-700 via-blue-600 to-blue-800
-        fixed left-0 top-0 
-        transform ${!isOpen && isMobile ? '-translate-x-full' : 'translate-x-0'}
-        border-r border-blue-500/30 shadow-xl
-        transition-[width,transform] duration-300 ease-in-out
-      `}>
-        <div className="p-4 overflow-hidden">
+    <div className="relative">
+      {/* Backdrop with smooth fade */}
+      {isMobile && (
+        <div 
+          className={`
+            fixed inset-0 bg-gray-900/60 backdrop-blur-sm
+            transition-all duration-300 ease-in-out
+            ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}
+          `}
+          onClick={toggleSidebar}
+          style={{ zIndex: 30 }}
+        />
+      )}
+
+      {/* Sidebar with improved transitions */}
+      <aside 
+        className={`
+          fixed left-0 top-0 h-screen
+          ${isMobile ? 'w-[280px]' : (isMinimized ? 'w-24' : 'w-72')}
+          bg-gradient-to-b from-blue-700 via-blue-600 to-blue-800
+          border-r border-blue-500/30 shadow-xl
+          transform transition-all duration-300 ease-in-out
+          ${isMobile ? (isOpen ? 'translate-x-0' : '-translate-x-full') : ''}
+        `}
+        style={{ zIndex: 50 }}
+      >
+        <div className="p-4 h-full flex flex-col relative">
+          {/* Header */}
           <div className={`
-            flex items-center justify-between mb-8
-            ${isMinimized ? 'justify-center' : ''}
-            transition-all duration-300
+            flex items-center
+            ${!isMobile && isMinimized ? 'justify-center' : 'justify-between'}
+            mb-8 transition-all duration-300
           `}>
             <div className={`
               flex items-center gap-3
-              ${isMinimized ? 'justify-center' : ''}
-              transition-all duration-300
+              ${!isMobile && isMinimized ? 'justify-center' : ''}
             `}>
-              <span className={`
+              <div className={`
                 bg-white/20 rounded-lg flex items-center justify-center
-                transition-all duration-300
-                ${isMinimized ? 'w-12 h-12' : 'w-8 h-8'}
+                ${!isMobile && isMinimized ? 'w-12 h-12' : 'w-8 h-8'}
               `}>
                 <span className={`
-                  text-white font-bold transition-all duration-300
-                  ${isMinimized ? 'text-2xl' : 'text-xl'}
+                  text-white font-bold
+                  ${!isMobile && isMinimized ? 'text-2xl' : 'text-xl'}
                 `}>
                   D
                 </span>
-              </span>
-              {!isMinimized && (
-                <span className="animate-fadeSlide text-2xl font-bold text-white/90">
+              </div>
+              {(!isMinimized || isMobile) && (
+                <span className="text-2xl font-bold text-white/90">
                   {t.dashboard}
                 </span>
               )}
             </div>
+            {/* Only show close button on mobile */}
             {isMobile && (
               <button
                 onClick={toggleSidebar}
-                className="p-3 rounded-lg hover:bg-blue-50 hover:scale-105
-                  active:scale-95 transition-all duration-200"
+                className="p-2 rounded-lg hover:bg-white/10 active:scale-95
+                  transition-all duration-200"
               >
-                <X className="w-7 h-7 text-blue-600" />
+                <X className="w-6 h-6 text-white" />
               </button>
             )}
           </div>
+
+          {/* Navigation with fixed mobile click handling */}
           <nav className={`
-            space-y-2 
-            ${isMinimized ? 'flex flex-col items-center' : ''} 
-            transition-all duration-300
+            flex-1 space-y-2 overflow-y-auto
+            ${!isMobile && isMinimized ? 'flex flex-col items-center' : ''}
           `}>
-            {navItems.map((item) => (
+            {navItems.map((item, index) => (
               <NavLink
                 key={item.path}
                 to={item.path}
-                className={({ isActive }) =>
-                  `flex items-center ${isMinimized ? 'justify-center w-14' : 'w-full'} 
-                   gap-4 px-3 py-3 rounded-xl
-                   text-sm font-medium group
-                   transition-all duration-300 ease-in-out
-                   hover:scale-[1.02] hover:shadow-lg
-                   ${isActive
-                    ? 'bg-white/15 text-white relative'
-                    : 'text-blue-100 hover:bg-white/10'
-                   }
-                   ${isMinimized ? 'mx-auto' : ''}`
-                }
+                onClick={(e) => {
+                  if (isMobile) {
+                    e.preventDefault();
+                    toggleSidebar();
+                    // Use setTimeout to wait for sidebar animation
+                    setTimeout(() => {
+                      navigate(item.path);
+                    }, 300);
+                  }
+                }}
+                className={({ isActive }) => `
+                  flex items-center 
+                  ${!isMobile && isMinimized ? 'justify-center w-14' : 'w-full'}
+                  gap-4 px-3 py-3 rounded-xl
+                  text-sm font-medium group
+                  transform transition-all duration-200 ease-out
+                  hover:scale-[1.02] active:scale-[0.98]
+                  ${isActive ? 'bg-white/15 text-white' : 'text-blue-100 hover:bg-white/10'}
+                `}
               >
                 <div className={`
-                  ${isMinimized ? 'p-2.5' : 'p-2'} 
+                  ${!isMobile && isMinimized ? 'p-2.5' : 'p-2'} 
                   rounded-lg bg-white/10
-                  transition-all duration-300 ease-in-out
+                  transition-all duration-200 ease-out
                   group-hover:bg-white/15 group-hover:shadow-md
-                  relative z-10
                 `}>
-                  <item.icon className={`
-                    w-5 h-5
-                    transition-transform duration-300
-                    ${isMinimized ? 'scale-110' : 'scale-100'}
-                  `} />
+                  <item.icon className="w-5 h-5 transition-transform duration-200 
+                    group-hover:scale-110" />
                 </div>
-                {!isMinimized && (
-                  <span className="transition-transform duration-300 group-hover:translate-x-1">
+                {(!isMinimized || isMobile) && (
+                  <span className="transition-transform duration-200 
+                    group-hover:translate-x-1">
                     {item.text}
                   </span>
                 )}
@@ -119,8 +139,10 @@ const Sidebar = ({ isOpen, isMinimized, isMobile, toggleSidebar }) => {
             ))}
           </nav>
 
-          {!isMinimized && (
-            <div className="mt-8 p-4 bg-white/10 rounded-xl transition-opacity duration-300">
+          {/* Support section - Show when not minimized or on mobile */}
+          {(!isMinimized || isMobile) && (
+            <div className="mt-auto p-4 bg-white/10 rounded-xl
+              transition-all duration-300 hover:bg-white/15">
               <div className="text-white/80 text-sm">
                 <p className="font-medium mb-1">{t.support}</p>
                 <p className="text-xs text-blue-100">{t.supportDescription}</p>
@@ -128,13 +150,7 @@ const Sidebar = ({ isOpen, isMinimized, isMobile, toggleSidebar }) => {
             </div>
           )}
         </div>
-      </div>
-      {isMobile && (
-        <div 
-          className="fixed inset-0 z-40 transition-opacity duration-300 ease-in-out"
-          onClick={toggleSidebar}
-        />
-      )}
+      </aside>
     </div>
   );
 };

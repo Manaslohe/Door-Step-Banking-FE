@@ -15,10 +15,11 @@ const ManageAgents = () => {
   const [error, setError] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [newAgent, setNewAgent] = useState({
+    userId: '',
+    password: '',
     name: '',
-    email: '',
-    phone: '',
-    password: ''
+    phoneNumber: '',
+    userType: 'agent'
   });
 
   useEffect(() => {
@@ -28,10 +29,12 @@ const ManageAgents = () => {
   const fetchAgents = async () => {
     try {
       console.log('Fetching agents...'); // Debug log
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/agents`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/adminagents`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-        }
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+          'Accept': 'application/json'
+        },
+        credentials: 'include'
       });
       
       if (!response.ok) {
@@ -42,7 +45,7 @@ const ManageAgents = () => {
       const data = await response.json();
       console.log('Received agents data:', data); // Debug log
       
-      if (data.success && Array.isArray(data.agents)) {
+      if (Array.isArray(data.agents)) {
         setAgents(data.agents);
       } else {
         throw new Error('Invalid data format');
@@ -59,35 +62,28 @@ const ManageAgents = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const agentData = {
-        name: newAgent.name,
-        userId: newAgent.email, // Using email as userId
-        password: newAgent.password,
-        phoneNumber: newAgent.phone,
-        userType: 'agent'
-      };
-
-      console.log('Sending agent data:', agentData); // Debug log
-
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/register`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/adminagents`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+          'Accept': 'application/json'
         },
-        body: JSON.stringify(agentData)
+        credentials: 'include',
+        body: JSON.stringify(newAgent)
       });
 
-      const data = await response.json();
-      console.log('Response:', data); // Debug log
-      
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to add agent');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to add agent');
       }
 
+      const data = await response.json();
+      console.log('Agent created successfully:', data);
+      
       await fetchAgents();
       setShowAddModal(false);
-      setNewAgent({ name: '', email: '', phone: '', password: '' });
+      setNewAgent({ userId: '', password: '', name: '', phoneNumber: '', userType: 'agent' });
     } catch (err) {
       console.error('Error adding agent:', err);
       setError(err.message || 'Failed to add agent');
@@ -100,7 +96,7 @@ const ManageAgents = () => {
     if (!window.confirm('Are you sure you want to remove this agent?')) return;
     
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/user/${agentId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/adminagents/${agentId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
@@ -138,10 +134,10 @@ const ManageAgents = () => {
                 {agent.name}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {agent.email} {/* This is actually userId */}
+                {agent.userId}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {agent.phone} {/* This is actually phoneNumber */}
+                {agent.phoneNumber}
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <span className={`px-2 py-1 text-xs rounded-full ${
@@ -209,36 +205,33 @@ const ManageAgents = () => {
             <h2 className="text-xl font-bold mb-4">Add New Agent</h2>
             <form onSubmit={handleAddAgent} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Name</label>
+                <label className="block text-sm font-medium text-gray-700">User ID</label>
+                <input
+                  type="text"
+                  value={newAgent.userId}
+                  onChange={(e) => setNewAgent({...newAgent, userId: e.target.value})}
+                  className="mt-1 w-full rounded-lg border border-gray-300 p-2"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Full Name</label>
                 <input
                   type="text"
                   value={newAgent.name}
                   onChange={(e) => setNewAgent({...newAgent, name: e.target.value})}
                   className="mt-1 w-full rounded-lg border border-gray-300 p-2"
                   required
-                  autoComplete="name"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Email (User ID)</label>
-                <input
-                  type="email"
-                  value={newAgent.email}
-                  onChange={(e) => setNewAgent({...newAgent, email: e.target.value})}
-                  className="mt-1 w-full rounded-lg border border-gray-300 p-2"
-                  required
-                  autoComplete="email"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Phone</label>
+                <label className="block text-sm font-medium text-gray-700">Phone Number</label>
                 <input
                   type="tel"
-                  value={newAgent.phone}
-                  onChange={(e) => setNewAgent({...newAgent, phone: e.target.value})}
+                  value={newAgent.phoneNumber}
+                  onChange={(e) => setNewAgent({...newAgent, phoneNumber: e.target.value})}
                   className="mt-1 w-full rounded-lg border border-gray-300 p-2"
                   required
-                  autoComplete="tel"
                 />
               </div>
               <div>
@@ -249,7 +242,6 @@ const ManageAgents = () => {
                   onChange={(e) => setNewAgent({...newAgent, password: e.target.value})}
                   className="mt-1 w-full rounded-lg border border-gray-300 p-2"
                   required
-                  autoComplete="new-password"
                 />
               </div>
               <div className="flex justify-end space-x-3">

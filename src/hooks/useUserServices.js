@@ -7,55 +7,43 @@ const useUserServices = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchServices = async () => {
+    const fetchUserServices = async () => {
       try {
         setLoading(true);
-        setError(null);
-        
-        const token = localStorage.getItem('token');
-        if (!token) {
-          throw new Error('No authentication token found');
+        const userData = JSON.parse(localStorage.getItem('userData'));
+        if (!userData?.phone) {
+          throw new Error('User phone not found');
         }
 
-        const response = await api.get('/user/services', {
-          headers: {
-            'Authorization': `Bearer ${token}`
+        // Updated to match the correct backend route
+        const response = await api.get(`/services`, {
+          params: {
+            userPhone: userData.phone
           }
         });
+        
+        console.log('Services response:', response.data);
 
-        if (!response.data?.data) {
-          throw new Error('Invalid response format');
+        // Handle the response data
+        if (response.data && Array.isArray(response.data)) {
+          const sortedServices = response.data.sort((a, b) => 
+            new Date(b.createdAt) - new Date(a.createdAt)
+          );
+          setServices(sortedServices);
+        } else {
+          console.warn('No services array found in response:', response.data);
+          setServices([]);
         }
-
-        setServices(response.data.data);
       } catch (err) {
-        console.error('Error fetching services:', err);
-        let errorMessage = 'Error fetching services';
-        
-        if (err.response) {
-          switch (err.response.status) {
-            case 401:
-              errorMessage = 'Session expired. Please login again';
-              localStorage.removeItem('token');
-              break;
-            case 403:
-              errorMessage = 'You do not have permission to view services';
-              break;
-            default:
-              errorMessage = err.response.data?.message || errorMessage;
-          }
-        } else if (err.request) {
-          errorMessage = 'Network error. Please check your connection';
-        }
-        
-        setError(errorMessage);
+        console.error('Error fetching user services:', err);
+        setError(err.message || 'Failed to fetch services');
         setServices([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchServices();
+    fetchUserServices();
   }, []);
 
   return { services, loading, error };

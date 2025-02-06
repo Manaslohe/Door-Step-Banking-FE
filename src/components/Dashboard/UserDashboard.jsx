@@ -1,33 +1,20 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, MessageSquare, Package, Ticket, Bell, Activity, Calendar } from 'lucide-react';
+import { Package, Ticket, Users, Activity, ChevronRight } from 'lucide-react';
 import DashboardLayout from './DashboardLayout';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { EditUserModal } from '../Modals/EditUserModal';
 import { useUser } from '../../hooks/useUser';
 import { useDashboardData } from '../../hooks/useDashboardData';
-import { Spinner } from '../Common/Spinner';
 
 const UserDashboard = () => {
   const navigate = useNavigate();
-  const { user, loading: userLoading, error: userError } = useUser(); // Add loading and error from useUser
-  const { 
-    recentServices, 
-    recentTickets, 
-    notifications, 
-    accountStatus,
-    loading: dashboardLoading, 
-    error: dashboardError 
-  } = useDashboardData();
+  const { user, loading: userLoading } = useUser();
+  const { recentServices, recentTickets, loading: dashboardLoading } = useDashboardData();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const handleUserUpdate = (updatedUser) => {
-    // Refresh user data or update local state
-    window.location.reload(); // For now, just reload the page
-  };
-
-  const goToServiceTracking = () => {
-    navigate('/track-service'); // This will show the list view
+    window.location.reload();
   };
 
   const formatDate = (date) => {
@@ -40,33 +27,50 @@ const UserDashboard = () => {
     }).format(new Date(date));
   };
 
-  const renderTickets = () => {
-    console.log('Rendering tickets:', { loading: dashboardLoading, error: dashboardError, tickets: recentTickets });
+  const goToServiceTracking = () => {
+    navigate('/track-service');
+  };
 
+  const ActionCard = ({ icon: Icon, title, description, onClick }) => (
+    <button
+      onClick={onClick}
+      className="w-full group p-6 bg-white/10 backdrop-blur-sm rounded-2xl
+        hover:bg-white/20 transition-all duration-300 
+        transform hover:-translate-y-1 hover:shadow-xl
+        border border-white/20 text-left"
+    >
+      <div className="flex items-center gap-4">
+        <div className="p-3 bg-white/20 rounded-xl">
+          <Icon className="w-6 h-6 md:w-8 md:h-8 text-white 
+            group-hover:scale-110 transition-transform" />
+        </div>
+        <div className="flex-1">
+          <h2 className="text-lg md:text-xl font-bold text-white mb-1">{title}</h2>
+          <p className="text-blue-50 text-sm md:text-base leading-relaxed">{description}</p>
+        </div>
+        <ChevronRight className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+      </div>
+    </button>
+  );
+
+  const renderTickets = () => {
     if (dashboardLoading) {
       return (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
             <div key={i} className="animate-pulse">
-              <div className="h-20 bg-gray-100 rounded-xl"></div>
+              <div className="h-24 bg-gray-100 rounded-xl"></div>
             </div>
           ))}
         </div>
       );
     }
 
-    if (dashboardError) {
-      return (
-        <div className="p-4 bg-red-50 rounded-xl">
-          <p className="text-red-600">Error loading tickets: {dashboardError}</p>
-        </div>
-      );
-    }
-
     if (!recentTickets?.length) {
       return (
-        <div className="text-center p-6 bg-gray-50 rounded-xl">
-          <p className="text-gray-500">No tickets found</p>
+        <div className="flex flex-col items-center justify-center h-48 bg-gray-50 rounded-xl">
+          <Ticket className="w-12 h-12 text-gray-400 mb-2" />
+          <p className="text-gray-500 font-medium">No tickets found</p>
         </div>
       );
     }
@@ -76,38 +80,43 @@ const UserDashboard = () => {
         {recentTickets.map((ticket) => (
           <div 
             key={ticket._id}
-            className="group p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 hover:border-indigo-200"
+            className="group p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 
+              border border-gray-100 hover:border-indigo-200 cursor-pointer"
+            onClick={() => navigate(`/support/ticket/${ticket._id}`)}
           >
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="font-medium text-gray-800 group-hover:text-indigo-600 transition-colors">
-                  {ticket.type.charAt(0).toUpperCase() + ticket.type.slice(1)} Issue
-                </p>
-                <p className="text-sm text-gray-500 line-clamp-1">{ticket.message}</p>
-                <p className="text-xs text-gray-400">
-                  Created: {new Date(ticket.createdAt).toLocaleString()}
-                </p>
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="font-medium text-gray-800 group-hover:text-indigo-600 
+                    transition-colors truncate">
+                    {ticket.type.charAt(0).toUpperCase() + ticket.type.slice(1)} Issue
+                  </h3>
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    ticket.priority === 'high' 
+                      ? 'bg-red-100 text-red-800' 
+                      : ticket.priority === 'medium'
+                      ? 'bg-yellow-100 text-yellow-800'
+                      : 'bg-green-100 text-green-800'
+                  }`}>
+                    {ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 line-clamp-2 mb-2">{ticket.message}</p>
+                <div className="flex items-center gap-3 text-xs text-gray-500">
+                  <span>Created: {formatDate(ticket.createdAt)}</span>
+                  <span className={`px-2 py-0.5 rounded-full ${
+                    ticket.status === 'open' 
+                      ? 'bg-blue-50 text-blue-700' 
+                      : ticket.status === 'in-progress'
+                      ? 'bg-yellow-50 text-yellow-700'
+                      : 'bg-green-50 text-green-700'
+                  }`}>
+                    {ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
+                  </span>
+                </div>
               </div>
-              <div className="flex flex-col gap-2 items-end">
-                <span className={`px-3 py-1 rounded-full text-sm ${
-                  ticket.status === 'open' 
-                    ? 'bg-blue-100 text-blue-800' 
-                    : ticket.status === 'in-progress'
-                    ? 'bg-yellow-100 text-yellow-800'
-                    : 'bg-green-100 text-green-800'
-                }`}>
-                  {ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
-                </span>
-                <span className={`px-3 py-1 rounded-full text-sm ${
-                  ticket.priority === 'high' 
-                    ? 'bg-red-100 text-red-800' 
-                    : ticket.priority === 'medium'
-                    ? 'bg-yellow-100 text-yellow-800'
-                    : 'bg-green-100 text-green-800'
-                }`}>
-                  {ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}
-                </span>
-              </div>
+              <ChevronRight className="w-5 h-5 text-gray-400 opacity-0 group-hover:opacity-100 
+                transition-opacity" />
             </div>
           </div>
         ))}
@@ -117,203 +126,165 @@ const UserDashboard = () => {
 
   return (
     <DashboardLayout>
-      {/* Hero Section with Gradient */}
-      <div className="bg-blue-700 to-blue-500 p-6 shadow-lg">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-br from-blue-700 via-blue-600 to-blue-800 p-4 md:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-6">
-            <button
+          <div className="grid md:grid-cols-2 gap-4">
+            <ActionCard
+              icon={Package}
+              title="Track Service"
+              description="Monitor your active services and stay updated with real-time status"
               onClick={goToServiceTracking}
-              className="group p-6 bg-white/10 backdrop-blur-sm rounded-2xl hover:bg-white/20 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl border border-white/20"
-            >
-              <Package className="w-10 h-10 text-white mb-3 group-hover:scale-110 transition-transform" />
-              <h2 className="text-2xl font-bold text-white mb-2">Track Service</h2>
-              <p className="text-blue-50 text-sm leading-relaxed">Monitor your active services and stay updated with real-time status</p>
-            </button>
-
-            <button
-              onClick={() => {
-                setSelectedTracking('ticket');
-                setShowTrackingModal(true);
-              }}
-              className="group p-6 bg-white/10 backdrop-blur-sm rounded-2xl hover:bg-white/20 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl border border-white/20"
-            >
-              <Ticket className="w-10 h-10 text-white mb-3 group-hover:scale-110 transition-transform" />
-              <h2 className="text-2xl font-bold text-white mb-2">Track Ticket</h2>
-              <p className="text-blue-50 text-sm leading-relaxed">Check and manage your support tickets efficiently</p>
-            </button>
+            />
+            <ActionCard
+              icon={Ticket}
+              title="Track Ticket"
+              description="Check and manage your support tickets efficiently"
+              onClick={() => navigate('/support')}
+            />
           </div>
         </div>
       </div>
 
-      {/* Dashboard Content */}
-      <div className="p-6 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-3 gap-6">
-            {/* User Profile Card */}
-            <Card className="hover:shadow-lg transition-all duration-300">
-              <CardHeader className="pb-2 border-b">
-                <CardTitle className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Users className="w-5 h-5 text-indigo-600" />
-                    <span className="font-semibold text-gray-800">Personal Information</span>
-                  </div>
-                  <button
-                    onClick={() => setIsEditModalOpen(true)}
-                    className="p-2 hover:bg-indigo-50 rounded-full transition-colors"
-                  >
-                    <Users className="w-4 h-4 text-indigo-600" />
-                  </button>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-4">
-                {userLoading ? (
-                  <div className="space-y-3">
-                    <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-                    <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-                    <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-                  </div>
-                ) : userError ? (
-                  <div className="p-4 bg-red-50 rounded-lg">
-                    <p className="text-red-600 text-sm">Error loading user data</p>
-                  </div>
-                ) : (
-                  <div className="space-y-1">
-                    <p className="flex justify-between text-sm">
-                      <span className="text-gray-600">Name:</span>
-                      <span className="font-medium">{`${user?.firstName} ${user?.lastName}`}</span>
-                    </p>
-                    <p className="flex justify-between text-sm">
-                      <span className="text-gray-600">Email:</span>
-                      <span className="font-medium">{user?.email}</span>
-                    </p>
-                    <p className="flex justify-between text-sm">
-                      <span className="text-gray-600">Phone:</span>
-                      <span className="font-medium">{user?.phone}</span>
-                    </p>
-                    <p className="flex justify-between text-sm">
-                      <span className="text-gray-600">Address:</span>
-                      <span className="font-medium">{user?.address}</span>
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Account Status Card */}
-            <Card className="hover:shadow-lg transition-all duration-300">
-              <CardHeader className="pb-2 border-b">
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-indigo-600" />
-                  <span className="font-semibold text-gray-800">Account Status</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-4">
-                {dashboardLoading ? (
-                  <div className="space-y-3">
-                    <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-                    <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-                  </div>
-                ) : dashboardError ? (
-                  <div className="p-4 bg-red-50 rounded-lg">
-                    <p className="text-red-600 text-sm">Error loading account status</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <p className="flex justify-between text-sm">
-                      <span className="text-gray-600">Status:</span>
-                      <span className={`font-medium ${
-                        accountStatus?.status === 'Active' ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        {accountStatus?.status}
-                      </span>
-                    </p>
-                    <p className="flex justify-between text-sm">
-                      <span className="text-gray-600">Last Login:</span>
-                      <span className="font-medium">{accountStatus?.lastLogin}</span>
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Recent Activity Card */}
-            <Card className="hover:shadow-lg transition-all duration-300">
-              <CardHeader className="pb-2 border-b">
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-indigo-600" />
-                  <span className="font-semibold text-gray-800">Recent Activity</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-4">
-                {dashboardLoading ? (
-                  <div className="space-y-3">
-                    <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-                    <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-                    <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-                  </div>
-                ) : dashboardError ? (
-                  <div className="p-4 bg-red-50 rounded-lg">
-                    <p className="text-red-600 text-sm">Error loading notifications</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {notifications?.map(notification => (
-                      <div key={notification.id} className="flex items-start gap-2 p-2 bg-gray-50 rounded-lg">
-                        <Bell className="w-4 h-4 text-blue-600 flex-shrink-0 mt-1" />
-                        <div>
-                          <p className="text-xs text-gray-600">{notification.message}</p>
-                          <p className="text-xs text-gray-500">{notification.date}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Tracking Stats */}
-            <Card className="col-span-full hover:shadow-lg transition-all duration-300">
-              <CardHeader className="pb-2 border-b">
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-indigo-600" />
-                  <span className="font-semibold text-gray-800">Tracking Overview</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Active Services</h3>
-                    <div className="space-y-4">
-                      {recentServices?.map(service => (
-                        <div 
-                          key={service.id} 
-                          onClick={() => handleServiceTracking(service.id)}
-                          className="group p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer border border-gray-100 hover:border-indigo-200"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium text-gray-800 group-hover:text-indigo-600 transition-colors">{service.id}</p>
-                              <p className="text-sm text-gray-500">Last updated: {service.lastUpdated}</p>
-                            </div>
-                            <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${
-                              service.status === 'Active' 
-                                ? 'bg-green-50 text-green-700 border border-green-200' 
-                                : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
-                            }`}>
-                              {service.status}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Tickets</h3>
-                    {renderTickets()}
-                  </div>
+      {/* Main Dashboard Content */}
+      <div className="p-4 md:p-6 bg-gray-50 min-h-screen">
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* Personal Information Card - More Compact Design */}
+          <Card className="p-4 hover:shadow-lg transition-all duration-300">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-blue-50 rounded-lg">
+                  <Users className="w-5 h-5 text-blue-600" />
                 </div>
-              </CardContent>
+                <h2 className="text-lg font-semibold text-gray-800">
+                  Personal Information
+                </h2>
+              </div>
+              <button
+                onClick={() => setIsEditModalOpen(true)}
+                className="p-1.5 hover:bg-blue-50 rounded-lg transition-colors"
+                aria-label="Edit personal information"
+              >
+                <Users className="w-4 h-4 text-blue-600" />
+              </button>
+            </div>
+            
+            {userLoading ? (
+              <div className="grid md:grid-cols-2 gap-3">
+                {[1, 2, 3, 4].map(i => (
+                  <div key={i} className="h-8 bg-gray-100 rounded-lg animate-pulse" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 gap-3 text-sm">
+                <div className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg">
+                  <span className="text-gray-500">Full Name</span>
+                  <span className="font-medium text-gray-900">
+                    {`${user?.firstName} ${user?.lastName}`}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg">
+                  <span className="text-gray-500">Email</span>
+                  <span className="font-medium text-gray-900">{user?.email}</span>
+                </div>
+                <div className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg">
+                  <span className="text-gray-500">Phone</span>
+                  <span className="font-medium text-gray-900">{user?.phone}</span>
+                </div>
+                <div className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg">
+                  <span className="text-gray-500">Address</span>
+                  <span className="font-medium text-gray-900">{user?.address}</span>
+                </div>
+              </div>
+            )}
+          </Card>
+
+          {/* Tracking Overview Section */}
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* Active Services */}
+            <Card className="p-4 md:p-6 hover:shadow-lg transition-all duration-300">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-50 rounded-lg">
+                    <Package className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-gray-800">Active Services</h2>
+                </div>
+                <button
+                  onClick={goToServiceTracking}
+                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                >
+                  View All
+                </button>
+              </div>
+
+              <div className="h-[400px] overflow-y-auto pr-2 space-y-4 scrollbar-thin 
+                scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                {dashboardLoading ? (
+                  [...Array(3)].map((_, i) => (
+                    <div key={i} className="animate-pulse">
+                      <div className="h-24 bg-gray-100 rounded-xl" />
+                    </div>
+                  ))
+                ) : recentServices?.length ? (
+                  recentServices.map(service => (
+                    <div 
+                      key={service.id}
+                      className="group p-4 bg-white rounded-xl shadow-sm hover:shadow-md 
+                        transition-all duration-300 cursor-pointer border border-gray-100 
+                        hover:border-blue-200"
+                      onClick={() => navigate(`/track-service/${service.id}`)}
+                    >
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-gray-800 group-hover:text-blue-600 
+                            transition-colors mb-1 truncate">
+                            {service.name || service.id}
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            Last updated: {service.lastUpdated}
+                          </p>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap
+                          ${service.status === 'Active' 
+                            ? 'bg-green-50 text-green-700 border border-green-200' 
+                            : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+                          }`}>
+                          {service.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-48 bg-gray-50 rounded-xl">
+                    <Package className="w-12 h-12 text-gray-400 mb-2" />
+                    <p className="text-gray-500 font-medium">No active services found</p>
+                  </div>
+                )}
+              </div>
+            </Card>
+
+            {/* Recent Tickets */}
+            <Card className="p-4 md:p-6 hover:shadow-lg transition-all duration-300">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-50 rounded-lg">
+                    <Ticket className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-gray-800">Recent Tickets</h2>
+                </div>
+                <button
+                  onClick={() => navigate('/support')}
+                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                >
+                  View All
+                </button>
+              </div>
+
+              <div className="h-[400px] overflow-y-auto pr-2 space-y-4 scrollbar-thin 
+                scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                {renderTickets()}
+              </div>
             </Card>
           </div>
         </div>

@@ -79,98 +79,95 @@ const Header = ({ toggleSidebar, toggleMinimize, isSidebarMinimized, isMobile })
   const isDashboardPage = location.pathname === '/dashboard';
 
   return (
-    <header className={`bg-blue-700 shadow-lg px-6 py-4 fixed top-0 right-0 
-      ${isMobile ? 'left-0' : isSidebarMinimized ? 'left-24' : 'left-72'}
-      transition-all duration-300 ease-in-out z-40
+    <header className={`
+      bg-blue-700 shadow-lg px-3 sm:px-6 py-3 sm:py-4 
+      fixed top-0 right-0
+      ${isMobile 
+        ? 'left-0 z-40' 
+        : `${isSidebarMinimized ? 'left-24' : 'left-72'} z-30`
+      }
+      transform transition-all duration-300 ease-in-out
     `}>
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           {/* Mobile menu button */}
-          <button 
-            onClick={toggleSidebar}
-            className={`p-2.5 rounded-lg hover:bg-white/10 active:bg-white/20
-              transition-all duration-200
-              ${isMobile ? '' : 'hidden'}
-            `}
-          >
-            <Menu className="w-7 h-7 text-white" />
-          </button>
+          {isMobile && (
+            <button 
+              onClick={toggleSidebar}
+              className="p-2 rounded-lg hover:bg-white/10 
+                active:scale-95 transition-all duration-200"
+            >
+              <Menu className="w-6 h-6 text-white" />
+            </button>
+          )}
           
-          {/* Minimize sidebar button */}
+          {/* Desktop minimize button */}
           {!isMobile && (
             <button 
               onClick={toggleMinimize}
-              className="p-2.5 rounded-lg hover:bg-white/10 active:bg-white/20
+              className="p-2 rounded-lg hover:bg-white/10 
                 transition-colors"
             >
               {isSidebarMinimized 
-                ? <PlusSquare className="w-7 h-7 text-white" />
-                : <MinusSquare className="w-7 h-7 text-white" />
+                ? <PlusSquare className="w-6 h-6 text-white" />
+                : <MinusSquare className="w-6 h-6 text-white" />
               }
             </button>
           )}
 
-          <div className="h-8 w-[2px] bg-white/20 mx-2" />
+          <div className="h-8 w-[2px] bg-white/20 mx-1 sm:mx-2" />
 
-          {/* Back and Dashboard buttons */}
-          <div className="flex items-center gap-3">
-            {!isDashboardPage && (
-              <>
-                <button 
-                  onClick={handleBack}
-                  className="flex items-center gap-2 text-white hover:text-white/90 
-                    group transition-colors px-3 py-2 rounded-lg hover:bg-white/10"
-                >
-                  <ChevronLeft className="w-6 h-6 group-hover:-translate-x-1 transition-transform" />
-                  <span className="text-base font-medium hidden md:inline">{t.back}</span>
-                </button>
-
-                <button 
-                  onClick={() => navigate('/dashboard')}
-                  className="flex items-center gap-2 text-white hover:text-white/90 
-                    transition-colors px-3 py-2 rounded-lg hover:bg-white/10"
-                >
-                  <span className="text-base font-medium">{t.dashboard}</span>
-                </button>
-              </>
-            )}
-          </div>
+          {/* Back button - always visible */}
+          {!isDashboardPage && (
+            <button 
+              onClick={handleBack}
+              className="flex items-center gap-2 text-white hover:text-white/90 
+                group transition-colors px-2 sm:px-3 py-2 rounded-lg hover:bg-white/10
+                min-w-[40px] sm:min-w-[80px]"
+            >
+              <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 group-hover:-translate-x-1 transition-transform" />
+              <span className="text-sm sm:text-base font-medium">{t.back}</span>
+            </button>
+          )}
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-2 sm:gap-6">
           {/* Language switcher */}
-          <div className="scale-110">
+          <div className="scale-90 sm:scale-100">
             <LanguageSwitcher />
           </div>
           
           {/* Notification button */}
-          <button className="p-2.5 hover:bg-white/10 rounded-lg relative
-            transition-colors">
-            <Bell className="w-6 h-6 text-white" />
-            <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-400 rounded-full
-              animate-pulse"></span>
+          <button 
+            aria-label="Notifications"
+            className="p-2 sm:p-2.5 hover:bg-white/10 rounded-lg relative
+              transition-colors"
+          >
+            <Bell className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+            <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-2 h-2 sm:w-2.5 sm:h-2.5 
+              bg-red-400 rounded-full animate-pulse"></span>
           </button>
 
           {/* Profile section */}
           <div className="relative">
             <button 
               onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="flex items-center gap-4 hover:bg-white/10 p-2 rounded-lg
-                transition-colors group"
+              className="flex items-center gap-2 sm:gap-4 hover:bg-white/10 p-2 rounded-lg
+                transition-colors"
             >
               {!loading && user && user.photoUrl ? (
                 <img 
                   src={user.photoUrl} 
                   alt="Profile"
-                  className="w-10 h-10 rounded-full object-cover border-2 border-white/20"
+                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover border-2 border-white/20"
                 />
               ) : (
-                <div className="w-10 h-10 bg-white/10 rounded-full flex items-center 
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/10 rounded-full flex items-center 
                   justify-center border-2 border-white/20">
-                  <User className="w-6 h-6 text-white" />
+                  <User className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
               )}
-              <span className="text-white text-lg font-medium">
+              <span className="text-white text-sm sm:text-base font-medium hidden sm:inline">
                 {fullName}
               </span>
             </button>

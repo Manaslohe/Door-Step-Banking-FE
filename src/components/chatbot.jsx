@@ -9,7 +9,7 @@ import {
   MessageInput,
   TypingIndicator,
 } from '@chatscope/chat-ui-kit-react';
-import { X, Volume2, VolumeX, Send, MessageSquare, Mic, MicOff } from 'lucide-react'; // Add these imports
+import { X, Volume2, VolumeX, Send, MessageSquare, Mic, MicOff } from 'lucide-react';
 import { useTranslation } from '../context/TranslationContext';
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "your_default_api_key";
