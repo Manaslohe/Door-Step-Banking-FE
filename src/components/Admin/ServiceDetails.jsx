@@ -53,9 +53,10 @@ const ServiceDetails = ({ serviceId, onClose, onUpdate }) => {
 
   const fetchAgents = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/agents`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/users?userType=agent`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+          'Accept': 'application/json'
         }
       });
       
@@ -66,8 +67,8 @@ const ServiceDetails = ({ serviceId, onClose, onUpdate }) => {
       const data = await response.json();
       console.log('Fetched agents:', data);
       
-      if (data.success && Array.isArray(data.agents)) {
-        setAgents(data.agents);
+      if (data.success && Array.isArray(data.users)) {
+        setAgents(data.users.filter(user => user.userType === 'agent' && user.isActive));
       } else {
         throw new Error('Invalid agents data format');
       }
@@ -87,7 +88,6 @@ const ServiceDetails = ({ serviceId, onClose, onUpdate }) => {
 
       const response = await fetch(`${import.meta.env.VITE_API_URL}/services/${serviceId}/status`, {
         method: 'PATCH',
-        credentials: 'include', // Add this
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
@@ -142,7 +142,8 @@ const ServiceDetails = ({ serviceId, onClose, onUpdate }) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+          'Accept': 'application/json'
         },
         body: JSON.stringify({
           agentId: selectedAgent,
@@ -151,16 +152,22 @@ const ServiceDetails = ({ serviceId, onClose, onUpdate }) => {
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to assign agent');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to assign agent');
       }
 
       const data = await response.json();
-      setService(data.service);
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to assign agent');
+      }
+
+      // Refresh service details
+      await fetchServiceDetails();
       setShowAgentModal(false);
       setAssignmentSuccess('Agent assigned successfully');
-      if (onUpdate) onUpdate(data.service);
     } catch (err) {
+      console.error('Agent assignment error:', err);
       setError(err.message || 'Failed to assign agent');
     } finally {
       setLoading(false);
@@ -328,13 +335,13 @@ const ServiceDetails = ({ serviceId, onClose, onUpdate }) => {
       <div className="flex-1">
         <p className="font-medium">{agent.name}</p>
         <p className="text-sm text-gray-500">{agent.phone}</p>
-        <p className="text-xs text-gray-400">{agent.email}</p>
+        <p className="text-xs text-gray-400">{agent.userId}</p>
       </div>
       <div className="flex items-center">
         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
           agent.activeAssignments > 5 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
         }`}>
-          {agent.activeAssignments} active tasks
+          {agent.activeAssignments || 0} active tasks
         </span>
       </div>
     </label>

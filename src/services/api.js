@@ -169,6 +169,31 @@ api.interceptors.response.use(
   }
 );
 
+// Update request interceptor to handle malformed tokens
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        // Basic token format validation
+        if (token.split('.').length === 3) {
+          config.headers['Authorization'] = `Bearer ${token}`;
+        } else {
+          console.warn('Malformed token detected, proceeding without token');
+          localStorage.removeItem('token'); // Clear invalid token
+        }
+      } catch (error) {
+        console.warn('Token validation failed:', error);
+        localStorage.removeItem('token');
+      }
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 export const registerCustomer = async (userData) => {
   try {
     // Validate required fields
@@ -298,15 +323,31 @@ export const createTicket = async (ticketData) => {
     }
 
     const user = JSON.parse(userData);
-    const headers = {
-      'Content-Type': 'application/json',
-      'user-id': user._id
-    };
-
-    console.log('Creating ticket with headers:', headers);
-    const response = await api.post('/tickets', ticketData, { headers });
+    const response = await api.post('/tickets', {
+      ...ticketData,
+      userId: user._id // Explicitly include userId in request body
+    });
+    
     return response.data;
   } catch (error) {
+    if (error.response?.status === 401) {
+      // If unauthorized, try to continue without token
+      try {
+        const userData = JSON.parse(localStorage.getItem('userData'));
+        const fallbackResponse = await api.post('/tickets', {
+          ...ticketData,
+          userId: userData._id
+        }, {
+          headers: {
+            'user-id': userData._id
+          }
+        });
+        return fallbackResponse.data;
+      } catch (fallbackError) {
+        console.error('Fallback request failed:', fallbackError);
+        throw new Error('Failed to create ticket. Please try logging in again.');
+      }
+    }
     console.error('Create Ticket Error:', error);
     handleApiError(error);
   }
@@ -349,29 +390,6 @@ export const verifyPAN = async (pan) => {
       };
     }
     throw error;
-  }
-};
-
-export const getUserServicesByPhone = async (phone) => {
-  try {
-    // Updated to use query parameter
-    const response = await api.get('/services', {
-      params: {
-        userPhone: phone
-      }
-    });
-    return response.data;
-  } catch (error) {
-    handleApiError(error);
-  }
-};
-
-export const getServiceDetails = async (serviceId) => {
-  try {
-    const response = await api.get(`/services/${serviceId}`);
-    return response.data;
-  } catch (error) {
-    handleApiError(error);
   }
 };
 

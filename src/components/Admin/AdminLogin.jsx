@@ -25,10 +25,10 @@ const AdminLogin = () => {
     setLoading(true);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/admin-login`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ userId, password })
       });
@@ -39,14 +39,14 @@ const AdminLogin = () => {
         throw new Error(data.message || 'Login failed');
       }
 
-      if (data.user.userType !== 'admin') {
-        throw new Error('Unauthorized access');
-      }
-
+      // Store both token and user data
       localStorage.setItem('adminToken', data.token);
-      localStorage.setItem('adminUser', JSON.stringify(data.user));
-      navigate('/admin/dashboard');
+      localStorage.setItem('adminUser', JSON.stringify({
+        ...data.user,
+        userType: 'admin' // Ensure userType is set
+      }));
 
+      navigate('/admin/dashboard');
     } catch (err) {
       setError(err.message);
     } finally {

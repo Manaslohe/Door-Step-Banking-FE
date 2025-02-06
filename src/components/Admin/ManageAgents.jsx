@@ -23,36 +23,56 @@ const ManageAgents = () => {
   });
 
   useEffect(() => {
+    // Check for admin token before fetching
+    const adminToken = localStorage.getItem('adminToken');
+    if (!adminToken) {
+      navigate('/admin/login');
+      return;
+    }
     fetchAgents();
-  }, []);
+  }, [navigate]);
 
   const fetchAgents = async () => {
     try {
-      console.log('Fetching agents...'); // Debug log
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/adminagents`, {
+      const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        navigate('/admin/login');
+        return;
+      }
+
+      console.log('Fetching agents with token:', adminToken);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/users?userType=agent`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+          'Authorization': `Bearer ${adminToken}`,
           'Accept': 'application/json'
-        },
-        credentials: 'include'
+        }
       });
-      
+
+      // Handle different response statuses
+      if (response.status === 401) {
+        localStorage.removeItem('adminToken');
+        navigate('/admin/login');
+        return;
+      }
+
+      if (response.status === 403) {
+        setError('Access denied. Admin privileges required.');
+        return;
+      }
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to fetch agents');
       }
-      
+
       const data = await response.json();
-      console.log('Received agents data:', data); // Debug log
-      
-      if (Array.isArray(data.agents)) {
-        setAgents(data.agents);
-      } else {
-        throw new Error('Invalid data format');
+      if (data.users) {
+        setAgents(data.users.filter(user => user.userType === 'agent'));
+        setError('');
       }
     } catch (err) {
-      console.error('Error in fetchAgents:', err); // Debug log
-      setError('Failed to load agents: ' + err.message);
+      console.error('Error in fetchAgents:', err);
+      setError(err.message || 'Failed to load agents');
     } finally {
       setLoading(false);
     }
@@ -61,26 +81,38 @@ const ManageAgents = () => {
   const handleAddAgent = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
+
+    const adminToken = localStorage.getItem('adminToken');
+    if (!adminToken) {
+      navigate('/admin/login');
+      return;
+    }
+
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/adminagents`, {
+      const agentData = {
+        ...newAgent,
+        email: newAgent.userId,
+        phoneNumber: newAgent.phoneNumber, // This will be stored as 'phone' in backend
+        userType: 'agent',
+        isActive: true
+      };
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/users/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
-          'Accept': 'application/json'
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
         },
-        credentials: 'include',
-        body: JSON.stringify(newAgent)
+        body: JSON.stringify(agentData)
       });
 
+      const data = await response.json();
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to add agent');
+        throw new Error(data.message || 'Failed to add agent');
       }
 
-      const data = await response.json();
-      console.log('Agent created successfully:', data);
-      
       await fetchAgents();
       setShowAddModal(false);
       setNewAgent({ userId: '', password: '', name: '', phoneNumber: '', userType: 'agent' });
@@ -93,10 +125,16 @@ const ManageAgents = () => {
   };
 
   const handleRemoveAgent = async (agentId) => {
+    const adminToken = localStorage.getItem('adminToken');
+    if (!adminToken) {
+      navigate('/admin/login');
+      return;
+    }
+
     if (!window.confirm('Are you sure you want to remove this agent?')) return;
     
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/adminagents/${agentId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/user/${agentId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
@@ -121,7 +159,7 @@ const ManageAgents = () => {
         <thead className="bg-gray-50">
           <tr>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User ID</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email/User ID</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
@@ -134,10 +172,10 @@ const ManageAgents = () => {
                 {agent.name}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {agent.userId}
+                {agent.userId || agent.email}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {agent.phoneNumber}
+                {agent.phone}
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <span className={`px-2 py-1 text-xs rounded-full ${
