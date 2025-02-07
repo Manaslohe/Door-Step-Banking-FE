@@ -109,6 +109,10 @@ module.exports = {
             'background-position': 'right center'
           }
         },
+        fadeSlide: {
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -122,6 +126,8 @@ module.exports = {
         ripple: 'ripple 1.5s ease-out infinite',
         checkmark: 'checkmark 0.5s ease-out forwards 0.5s',
         gradientFlow: 'gradientFlow 3s ease infinite',
+        'fadeSlide': 'fadeSlide 0.5s ease-out',
+        'bounce': 'bounce 1s infinite',
       },
       utilities: {
         '.animation-delay-300': {

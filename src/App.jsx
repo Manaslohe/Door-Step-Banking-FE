@@ -20,6 +20,8 @@ import AdminDashboard from './components/Admin/AdminDashboard';
 import AgentLogin from './components/Agent/AgentLogin';
 import AgentDashboard from './components/Agent/AgentDashboard';
 import ManageAgents from './components/Admin/ManageAgents';
+import TrackService from './components/Track/TrackService';
+import TrackTicket from './components/Track/TrackTicket';
 
 const App = () => {
   return (
@@ -47,6 +49,9 @@ const App = () => {
             <Route path="/services/document-service" element={<DocumentService />} />
             <Route path="/services/life-certificate" element={<LifeCertificate />} />
             <Route path="/services/online-assistance" element={<OnlineAssistance />} />
+            <Route path="/track-service" element={<TrackService />} />
+            <Route path="/track-service/:serviceId" element={<TrackService />} />
+            <Route path="/track-ticket" element={<TrackTicket />} />
           </Route>
 
           {/* Admin protected routes */}

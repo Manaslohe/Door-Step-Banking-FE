@@ -1,32 +1,38 @@
 import React from 'react';
 import { Shield, Users } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const LoginTypeSlider = ({ activeType, onTypeChange }) => {
   return (
-    <div className="w-full max-w-xs mx-auto bg-white rounded-full p-1 shadow-md">
+    <div className="w-full max-w-md mx-auto bg-white/80 backdrop-blur-sm rounded-2xl p-2 shadow-lg hover:shadow-xl transition-all duration-300">
       <div className="relative flex">
-        <div
-          className={`absolute top-0 left-0 w-1/2 h-full bg-blue-500 rounded-full transition-transform duration-300 ease-in-out ${
-            activeType === 'admin' ? 'translate-x-full' : ''
-          }`}
+        <motion.div
+          layout
+          className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl"
+          animate={{
+            x: activeType === 'admin' ? '100%' : '0%',
+          }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
         />
         <button
           onClick={() => onTypeChange('customer')}
-          className={`flex-1 py-2 px-4 text-sm font-medium rounded-full relative z-10 transition-colors duration-300 flex items-center justify-center gap-2 ${
-            activeType === 'customer' ? 'text-white' : 'text-gray-700'
-          }`}
+          className={`flex-1 py-3 px-6 rounded-xl relative z-10 transition-all duration-300 
+            ${activeType === 'customer' ? 'text-white scale-105' : 'text-gray-700 hover:text-blue-600'}`}
         >
-          <Users className="w-4 h-4" />
-          Customer
+          <div className="flex items-center justify-center gap-3">
+            <Users className={`w-5 h-5 ${activeType === 'customer' ? 'animate-bounce' : ''}`} />
+            <span className="font-medium">Customer</span>
+          </div>
         </button>
         <button
           onClick={() => onTypeChange('admin')}
-          className={`flex-1 py-2 px-4 text-sm font-medium rounded-full relative z-10 transition-colors duration-300 flex items-center justify-center gap-2 ${
-            activeType === 'admin' ? 'text-white' : 'text-gray-700'
-          }`}
+          className={`flex-1 py-3 px-6 rounded-xl relative z-10 transition-all duration-300 
+            ${activeType === 'admin' ? 'text-white scale-105' : 'text-gray-700 hover:text-blue-600'}`}
         >
-          <Shield className="w-4 h-4" />
-          Admin
+          <div className="flex items-center justify-center gap-3">
+            <Shield className={`w-5 h-5 ${activeType === 'admin' ? 'animate-bounce' : ''}`} />
+            <span className="font-medium">Admin</span>
+          </div>
         </button>
       </div>
     </div>

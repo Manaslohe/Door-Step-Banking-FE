@@ -230,7 +230,7 @@ const LandingPage = () => {
             <div className="text-center mb-8 md:mb-12">
               <div className="flex items-center justify-center mb-4">
                 <Bank className="w-12 h-12 md:w-16 md:h-16 text-blue-600 mr-4" />
-                <h1 className="text-4xl md:text-5xl font-bold text-gray-800">SaralBank</h1>
+                <h1 className="text-4xl md:text-5xl font-bold text-gray-800">DoorBank</h1>
               </div>
               <p className="text-xl md:text-2xl text-gray-600">Banking Services at Your Doorstep</p>
             </div>

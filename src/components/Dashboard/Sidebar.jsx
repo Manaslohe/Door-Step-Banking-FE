@@ -19,6 +19,7 @@ const Sidebar = ({ isOpen, isMinimized, isMobile, toggleSidebar }) => {
     { path: '/pricing-structure', icon: DollarSign, text: t.pricingStructure },
     { path: '/support', icon: HelpCircle, text: t.support },
     { path: '/track-service', icon: Clock, text: 'Track Service' },
+    { path: '/track-ticket', icon: FileText, text: 'Track Ticket' },
   ];
 
   // Mobile-only: Hide completely when closed
