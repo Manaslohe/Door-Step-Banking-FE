@@ -7,6 +7,7 @@ import ConsentModal from './ConsentModal';
 import KycVerificationForm from './KycVerificationForm';
 import { registerCustomer } from '../../services/api';
 import imageCompression from 'browser-image-compression';
+import { auth } from '../../utils/auth';
 
 // New PersonalDetailsForm component
 const PersonalDetailsForm = React.memo(({ 
@@ -229,14 +230,13 @@ export default function Register() {
       const response = await registerCustomer(formData);
       
       if (response && response.user) {
-        localStorage.setItem('token', response.token);
+        // Use auth utility instead of direct localStorage
+        auth.setAuth(response.token, response.user);
         setShowConsent(true);
       } else {
         throw new Error(response?.message || 'Registration failed');
       }
     } catch (err) {
-      console.error('Registration error details:', err);
-      setError(typeof err === 'string' ? err : err.message || 'Registration failed. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

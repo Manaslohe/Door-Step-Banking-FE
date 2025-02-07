@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Search, AlertCircle } from 'lucide-react';
+import { Search, Loader } from 'lucide-react';
 import DashboardLayout from '../Dashboard/DashboardLayout';
+import { useTickets } from '../../hooks/useTickets';
+import { useUser } from '../../hooks/useUser';
 import {
   Table,
   TableBody,
@@ -33,26 +35,49 @@ const StatusBadge = ({ status }) => {
   );
 };
 
+const PriorityBadge = ({ priority }) => {
+  const getPriorityStyles = () => {
+    switch (priority.toLowerCase()) {
+      case 'high':
+        return 'bg-red-100 text-red-800';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'low':
+        return 'bg-blue-100 text-blue-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  return (
+    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getPriorityStyles()}`}>
+      {priority}
+    </span>
+  );
+};
+
 const TrackTicket = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  
-  // Mock data - replace with actual API call
-  const tickets = [
-    {
-      id: 'TKT-001',
-      subject: 'Service Issue',
-      category: 'Technical',
-      status: 'OPEN',
-      createdAt: '2024-01-20T10:00:00',
-      lastUpdated: '2024-01-20T14:30:00',
-    },
-    // Add more mock tickets as needed
-  ];
+  const { user } = useUser();
+  const { tickets, isLoading, error } = useTickets(user?._id);
 
   const filteredTickets = tickets.filter(ticket =>
-    ticket.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    ticket.subject.toLowerCase().includes(searchTerm.toLowerCase())
+    ticket._id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    ticket.message?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    ticket.type?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-7xl mx-auto p-4">
+          <div className="text-center text-red-600 p-4">
+            Error loading tickets: {error}
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -83,15 +108,24 @@ const TrackTicket = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Ticket ID</TableHead>
-                  <TableHead>Subject</TableHead>
-                  <TableHead>Category</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Message</TableHead>
+                  <TableHead>Priority</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
-                  <TableHead>Last Updated</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredTickets.length === 0 ? (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8">
+                      <div className="flex items-center justify-center">
+                        <Loader className="w-6 h-6 animate-spin mr-2" />
+                        Loading tickets...
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : filteredTickets.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                       No tickets found
@@ -100,20 +134,30 @@ const TrackTicket = () => {
                 ) : (
                   filteredTickets.map((ticket) => (
                     <TableRow 
-                      key={ticket.id}
+                      key={ticket._id}
                       className="cursor-pointer hover:bg-gray-50"
                     >
-                      <TableCell className="font-medium">{ticket.id}</TableCell>
-                      <TableCell>{ticket.subject}</TableCell>
-                      <TableCell>{ticket.category}</TableCell>
+                      <TableCell className="font-medium">
+                        {ticket._id.substring(ticket._id.length - 8)}
+                      </TableCell>
+                      <TableCell className="capitalize">{ticket.type}</TableCell>
+                      <TableCell className="max-w-md truncate">
+                        {ticket.message}
+                      </TableCell>
+                      <TableCell>
+                        <PriorityBadge priority={ticket.priority} />
+                      </TableCell>
                       <TableCell>
                         <StatusBadge status={ticket.status} />
                       </TableCell>
                       <TableCell>
-                        {new Date(ticket.createdAt).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        {new Date(ticket.lastUpdated).toLocaleDateString()}
+                        {new Date(ticket.createdAt).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
                       </TableCell>
                     </TableRow>
                   ))

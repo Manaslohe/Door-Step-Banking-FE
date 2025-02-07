@@ -9,9 +9,12 @@ import Sidebar from './Dashboard/Sidebar';
 import Chatbot from './chatbot';
 import FinancialAdvice from './FinancialAdvice';
 import { useTranslation } from '../context/TranslationContext';
+import { auth } from '../utils/auth';
+import { tokenManager } from '../utils/tokenManager';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isSidebarMinimized, setSidebarMinimized] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -20,21 +23,39 @@ const Dashboard = () => {
   const { t } = useTranslation();
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('userData');
-    
-    if (!token || !userData) {
-      navigate('/', { replace: true });
-      return;
-    }
+    const validateSession = async () => {
+      try {
+        console.log('Validating dashboard session...');
+        
+        const token = auth.getToken();
+        if (token) {
+          // Store token as dashboard token
+          tokenManager.setDashboardToken(token);
+        }
 
-    // Parse user data to make sure it's valid
-    try {
-      JSON.parse(userData);
-    } catch (e) {
-      localStorage.clear();
-      navigate('/', { replace: true });
-    }
+        if (!auth.isSessionValid()) {
+          console.log('Invalid session, redirecting to login');
+          auth.clearAuth();
+          navigate('/', { replace: true });
+          return;
+        }
+
+        const userData = auth.getUserData();
+        if (!userData?._id) {
+          throw new Error('Invalid user data');
+        }
+
+        console.log('Session valid, staying on dashboard');
+        auth.refreshSession();
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Dashboard session error:', error);
+        auth.clearAuth();
+        navigate('/', { replace: true });
+      }
+    };
+
+    validateSession();
   }, [navigate]);
 
   useEffect(() => {
@@ -86,6 +107,14 @@ const Dashboard = () => {
       path: '/pricing-structure'
     }
   ];
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">

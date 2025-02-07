@@ -5,12 +5,14 @@ import DashboardLayout from './DashboardLayout';
 import { Card } from '@/components/ui/card';
 import { EditUserModal } from '../Modals/EditUserModal';
 import { useUser } from '../../hooks/useUser';
-import { useDashboardData } from '../../hooks/useDashboardData';
+import { useTickets } from '../../hooks/useTickets'; // Add this import
+import useServiceTracking from '../../hooks/useServiceTracking';
 
 const UserDashboard = () => {
   const navigate = useNavigate();
   const { user, loading: userLoading } = useUser();
-  const { recentServices, recentTickets, loading: dashboardLoading } = useDashboardData();
+  const { tickets: recentTickets, loading: ticketsLoading } = useTickets(user?._id);
+  const { services: recentServices, loading: servicesLoading } = useServiceTracking();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const handleUserUpdate = (updatedUser) => {
@@ -29,6 +31,10 @@ const UserDashboard = () => {
 
   const goToServiceTracking = () => {
     navigate('/track-service');
+  };
+
+  const goToTrackTicket = () => {
+    navigate('/track-ticket');
   };
 
   const ActionCard = ({ icon: Icon, title, description, onClick }) => (
@@ -54,7 +60,7 @@ const UserDashboard = () => {
   );
 
   const renderTickets = () => {
-    if (dashboardLoading) {
+    if (ticketsLoading) {
       return (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
@@ -124,6 +130,58 @@ const UserDashboard = () => {
     );
   };
 
+  const renderServices = () => {
+    if (servicesLoading) {
+      return [...Array(3)].map((_, i) => (
+        <div key={i} className="animate-pulse">
+          <div className="h-24 bg-gray-100 rounded-xl" />
+        </div>
+      ));
+    }
+
+    if (!recentServices?.length) {
+      return (
+        <div className="flex flex-col items-center justify-center h-48 bg-gray-50 rounded-xl">
+          <Package className="w-12 h-12 text-gray-400 mb-2" />
+          <p className="text-gray-500 font-medium">No active services found</p>
+        </div>
+      );
+    }
+
+    return recentServices.map(service => (
+      <div 
+        key={service._id}
+        className="group p-4 bg-white rounded-xl shadow-sm hover:shadow-md 
+          transition-all duration-300 cursor-pointer border border-gray-100 
+          hover:border-blue-200"
+        onClick={() => navigate(`/track-service/${service._id}`)}
+      >
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <h3 className="font-medium text-gray-800 group-hover:text-blue-600 
+              transition-colors mb-1 truncate">
+              {service.serviceType || service.serviceId}
+            </h3>
+            <p className="text-sm text-gray-500">
+              Created: {new Date(service.createdAt).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+              })}
+            </p>
+          </div>
+          <span className={`px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap
+            ${service.status?.toLowerCase() === 'active' 
+              ? 'bg-green-50 text-green-700 border border-green-200' 
+              : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+            }`}>
+            {service.status || 'Pending'}
+          </span>
+        </div>
+      </div>
+    ));
+  };
+
   return (
     <DashboardLayout>
       {/* Hero Section */}
@@ -140,7 +198,7 @@ const UserDashboard = () => {
               icon={Ticket}
               title="Track Ticket"
               description="Check and manage your support tickets efficiently"
-              onClick={() => navigate('/support')}
+              onClick={goToTrackTicket}
             />
           </div>
         </div>
@@ -220,47 +278,7 @@ const UserDashboard = () => {
 
               <div className="h-[400px] overflow-y-auto pr-2 space-y-4 scrollbar-thin 
                 scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                {dashboardLoading ? (
-                  [...Array(3)].map((_, i) => (
-                    <div key={i} className="animate-pulse">
-                      <div className="h-24 bg-gray-100 rounded-xl" />
-                    </div>
-                  ))
-                ) : recentServices?.length ? (
-                  recentServices.map(service => (
-                    <div 
-                      key={service.id}
-                      className="group p-4 bg-white rounded-xl shadow-sm hover:shadow-md 
-                        transition-all duration-300 cursor-pointer border border-gray-100 
-                        hover:border-blue-200"
-                      onClick={() => navigate(`/track-service/${service.id}`)}
-                    >
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-gray-800 group-hover:text-blue-600 
-                            transition-colors mb-1 truncate">
-                            {service.name || service.id}
-                          </h3>
-                          <p className="text-sm text-gray-500">
-                            Last updated: {service.lastUpdated}
-                          </p>
-                        </div>
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap
-                          ${service.status === 'Active' 
-                            ? 'bg-green-50 text-green-700 border border-green-200' 
-                            : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
-                          }`}>
-                          {service.status}
-                        </span>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-48 bg-gray-50 rounded-xl">
-                    <Package className="w-12 h-12 text-gray-400 mb-2" />
-                    <p className="text-gray-500 font-medium">No active services found</p>
-                  </div>
-                )}
+                {renderServices()}
               </div>
             </Card>
 

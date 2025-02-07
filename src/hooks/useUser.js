@@ -1,63 +1,55 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getMe } from '../services/api';
-import { toast } from 'react-hot-toast';
+import { auth } from '../utils/auth';
 
 export const useUser = () => {
-  const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem('userData');
-    return savedUser ? JSON.parse(savedUser) : null;
+  const [state, setState] = useState({
+    user: auth.getUserData(),
+    loading: false, // Start with false since we have cached data
+    error: null,
+    fullName: auth.getUserData()?.firstName ? 
+      `${auth.getUserData().firstName} ${auth.getUserData().lastName}` : 
+      'Loading...'
   });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const savedUser = localStorage.getItem('userData');
-        if (!savedUser) {
-          setLoading(false);
-          return;
-        }
+  const fetchUserData = useCallback(async () => {
+    // If we already have user data, don't show loading state
+    const cachedUser = auth.getUserData();
+    if (!cachedUser) {
+      setState(prev => ({ ...prev, loading: true }));
+    }
 
-        const parsedUser = JSON.parse(savedUser);
-        if (!parsedUser._id) {
-          throw new Error('Invalid user data in localStorage');
-        }
-
-        const response = await getMe();
-        if (response.success && response.user) {
-          updateUser(response.user);
-        }
-      } catch (err) {
-        console.error('Error fetching user data:', err);
-        setError(err.message);
-        // Clear invalid data
-        if (err.message.includes('Invalid user data')) {
-          localStorage.removeItem('userData');
-          setUser(null);
-        }
-        toast.error('Failed to load user profile');
-      } finally {
-        setLoading(false);
+    try {
+      const result = await getMe();
+      if (result?.user) {
+        setState({
+          user: result.user,
+          loading: false,
+          error: null,
+          fullName: `${result.user.firstName} ${result.user.lastName}`
+        });
       }
-    };
-
-    fetchUserData();
+    } catch (error) {
+      // Only update state if we don't have cached data
+      if (!cachedUser) {
+        setState(prev => ({
+          ...prev,
+          loading: false,
+          error: error.message
+        }));
+      }
+      // Log error but continue with cached data
+      console.warn('Using cached data due to fetch error:', error);
+    }
   }, []);
 
-  const updateUser = (userData) => {
-    if (userData) {
-      const updatedUser = {
-        ...userData,
-        photoUrl: userData.photoUrl || '/default-avatar.png'
-      };
-      setUser(updatedUser);
-      localStorage.setItem('userData', JSON.stringify(updatedUser));
-    } else {
-      setUser(null);
-      localStorage.removeItem('userData');
+  // Only fetch if needed
+  useEffect(() => {
+    const cachedUser = auth.getUserData();
+    if (!cachedUser || !auth.isSessionValid()) {
+      fetchUserData();just
     }
-  };
+  }, [fetchUserData]);
 
-  return { user, loading, error, setUser: updateUser };
+  return state;
 };

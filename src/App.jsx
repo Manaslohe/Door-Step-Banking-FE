@@ -75,6 +75,7 @@ const ProtectedRoute = () => {
   const userData = localStorage.getItem('userData');
 
   if (!token || !userData) {
+    auth.clearAuth(); // Clear auth data
     localStorage.clear(); // Clear any partial data
     return <Navigate to="/" replace />;
   }

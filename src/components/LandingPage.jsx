@@ -19,6 +19,7 @@ import NewsTicker from './Login/NewsTicker';
 import RegisterTransition from './Login/RegisterTransition';
 import api from '../services/api';
 import LoginTypeSlider from './Login/LoginTypeSlider';
+import { auth } from '../utils/auth';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -43,12 +44,18 @@ const LandingPage = () => {
     }
   }, [location]);
 
-  // Add effect to check if user is already logged in
+  // Initial auth check useEffect
   useEffect(() => {
-    const userData = localStorage.getItem('userData');
-    if (userData) {
-      navigate('/dashboard', { replace: true });
-    }
+    const checkAuth = () => {
+      if (auth.isSessionValid()) {
+        const userData = auth.getUserData();
+        if (userData?._id) {
+          navigate('/dashboard', { replace: true });
+        }
+      }
+    };
+    
+    checkAuth();
   }, [navigate]);
 
   const handleLoginClick = () => {
@@ -80,20 +87,19 @@ const LandingPage = () => {
     setLoading(true);
     try {
       console.log('Verifying PAN:', panNumber);
+      // Don't need auth token for this request
       const response = await api.post('/users/verify-pan', {
         pan: panNumber.toUpperCase()
+      }, {
+        headers: { 'Content-Type': 'application/json' }
       });
       
-      console.log('PAN verification response:', response.data);
-      
       if (response.data.success) {
-        // User found - proceed with OTP
         setPhoneLastDigits(response.data.phone);
         setShowOtpField(true);
         localStorage.setItem('tempVerification', JSON.stringify(response.data));
         setError('');
       } else {
-        // User not found - show error but don't navigate
         setError('No account found with this PAN number. Please check and try again.');
       }
     } catch (error) {
@@ -116,43 +122,44 @@ const LandingPage = () => {
       }
       
       const verificationData = JSON.parse(tempData);
-      console.log('Verification data:', verificationData);
       
       if (otp === '000000') {
         const loginPayload = {
           email: verificationData.user.email,
-          password: verificationData.user.phone, // Use phone as password
+          password: verificationData.user.phone,
           pan: panNumber.toUpperCase()
         };
-
-        console.log('Sending login payload:', loginPayload);
         
-        try {
-          const loginResponse = await api.post('/users/login', loginPayload);
-          console.log('Login response:', loginResponse.data);
-  
-          if (loginResponse.data.success) {
-            // Store user data and token
-            const { user, token } = loginResponse.data;
-            localStorage.setItem('userData', JSON.stringify(user));
-            localStorage.setItem('token', token);
-  
-            setSuccess(true);
-            setTimeout(() => {
-              localStorage.removeItem('tempVerification');
-              navigate('/dashboard');
-            }, 1000);
+        const loginResponse = await api.post('/users/login', loginPayload);
+        
+        if (loginResponse.data.success) {
+          const { token, user } = loginResponse.data.data;
+
+          // Set auth data and verify it was set correctly
+          const authSet = auth.setAuth(token, user);
+          if (!authSet) {
+            throw new Error('Failed to set authentication data');
           }
-        } catch (loginError) {
-          console.error('Login error:', loginError);
-          throw loginError.response?.data || loginError;
+
+          // Verify session was established
+          if (!auth.isSessionValid()) {
+            throw new Error('Session validation failed');
+          }
+
+          setSuccess(true);
+          localStorage.removeItem('tempVerification');
+
+          // Add delay before navigation
+          setTimeout(() => {
+            navigate('/dashboard', { replace: true });
+          }, 1000);
         }
       } else {
-        throw new Error('Invalid OTP. Use 000000 for testing');
+        throw new Error('Invalid OTP');
       }
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.message || 'Login failed. Please try again.');
+      setError(err.message || 'Login failed');
     } finally {
       setLoading(false);
     }

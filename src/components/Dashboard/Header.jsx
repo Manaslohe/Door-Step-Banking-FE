@@ -9,6 +9,7 @@ import { EditUserModal } from '../Modals/EditUserModal';
 import { useTranslation } from '../../context/TranslationContext';
 import LanguageSwitcher from '../LanguageSwitcher';
 import { logout } from '../../services/api'; // Import the logout service
+import { auth } from '../../utils/auth'; // Import auth
 
 const Header = ({ toggleSidebar, toggleMinimize, isSidebarMinimized, isMobile }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -77,6 +78,23 @@ const Header = ({ toggleSidebar, toggleMinimize, isSidebarMinimized, isMobile })
 
   // Check if we're on the main dashboard page
   const isDashboardPage = location.pathname === '/dashboard';
+
+  useEffect(() => {
+    if (!loading) {
+      if (error || !user) {
+        auth.clearAuth();
+        navigate('/', { replace: true });
+      }
+    }
+  }, [user, loading, error, navigate]);
+
+  if (loading) {
+    return (
+      <header className="bg-blue-700 shadow-lg fixed top-0 right-0 left-0 h-16 flex items-center justify-center">
+        <div className="animate-spin h-5 w-5 border-2 border-white rounded-full border-t-transparent"></div>
+      </header>
+    );
+  }
 
   return (
     <header className={`

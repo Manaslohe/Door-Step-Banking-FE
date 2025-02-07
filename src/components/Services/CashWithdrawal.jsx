@@ -122,15 +122,21 @@ const CashWithdrawal = () => {
               ].map((step, index) => (
                 <motion.div
                   key={step.key}
+                  initial={{ backgroundColor: 'rgba(255, 255, 255, 0)' }}
                   animate={{ 
-                    backgroundColor: calculateProgress()[step.key] ? 'rgb(239 246 255)' : 'transparent',
+                    backgroundColor: calculateProgress()[step.key] 
+                      ? 'rgb(239, 246, 255)' 
+                      : 'rgba(255, 255, 255, 0)'
                   }}
                   className={`p-3 sm:p-4 md:p-6 ${index !== 2 ? 'border-r' : ''}`}
                 >
                   <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
                     <motion.div
+                      initial={{ backgroundColor: 'rgb(229, 231, 235)' }}
                       animate={{
-                        backgroundColor: calculateProgress()[step.key] ? 'rgb(59 130 246)' : 'rgb(229 231 235)',
+                        backgroundColor: calculateProgress()[step.key] 
+                          ? 'rgb(59, 130, 246)' 
+                          : 'rgb(229, 231, 235)',
                       }}
                       className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center"
                     >

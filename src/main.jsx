@@ -1,10 +1,18 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.jsx'
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import './index.css';
+import axios from 'axios';
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
+// Make axios available globally
+window.axios = axios;
+
+// Set default axios config
+axios.defaults.baseURL = import.meta.env.VITE_APP_API_URL;
+axios.defaults.headers.common['Content-Type'] = 'application/json';
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
     <App />
-  </StrictMode>,
-)
+  </React.StrictMode>
+);

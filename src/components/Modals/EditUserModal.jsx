@@ -77,9 +77,15 @@ export const EditUserModal = ({ user, isOpen, onClose, onUpdate }) => {
     setSuccessMessage('');
 
     try {
-      const token = localStorage.getItem('token');
+      // Get token from both possible sources
+      const token = auth.getToken() || tokenManager.getDashboardToken();
+      
+      if (!token) {
+        throw new Error('No authentication token available');
+      }
+
       const response = await axios.put(
-        `${import.meta.env.VITE_API_URL}/users/${user._id}/update`,
+        `${import.meta.env.VITE_APP_API_URL}/users/${user._id}/update`,
         formData,
         {
           headers: { 
@@ -89,18 +95,62 @@ export const EditUserModal = ({ user, isOpen, onClose, onUpdate }) => {
         }
       );
 
-      setSuccessMessage('Profile updated successfully!');
-      if (onUpdate) {
-        onUpdate(response.data);
+      if (response.data.success) {
+        // Update both localStorage and auth state
+        const updatedUser = { ...user, ...formData };
+        auth.setAuth(token, updatedUser);
+        
+        setSuccessMessage('Profile updated successfully!');
+        if (onUpdate) {
+          onUpdate(updatedUser);
+        }
+        
+        setTimeout(() => {
+          setIsEditing(false);
+          onClose();
+        }, 1500);
+      } else {
+        throw new Error(response.data.message || 'Failed to update profile');
       }
-      
-      setTimeout(() => {
-        setIsEditing(false);
-        onClose();
-      }, 1500);
     } catch (err) {
       console.error('Update error:', err);
       setError(err.response?.data?.message || 'Error updating profile');
+      
+      // Try to recover if it's an auth error
+      if (err.response?.status === 401) {
+        const dashboardToken = tokenManager.getDashboardToken();
+        if (dashboardToken) {
+          // Retry with dashboard token
+          try {
+            const retryResponse = await axios.put(
+              `${import.meta.env.VITE_APP_API_URL}/users/${user._id}/update`,
+              formData,
+              {
+                headers: { 
+                  'Authorization': `Bearer ${dashboardToken}`,
+                  'Content-Type': 'application/json'
+                }
+              }
+            );
+            
+            if (retryResponse.data.success) {
+              const updatedUser = { ...user, ...formData };
+              auth.setAuth(dashboardToken, updatedUser);
+              setSuccessMessage('Profile updated successfully!');
+              if (onUpdate) {
+                onUpdate(updatedUser);
+              }
+              setTimeout(() => {
+                setIsEditing(false);
+                onClose();
+              }, 1500);
+              return;
+            }
+          } catch (retryErr) {
+            console.error('Retry update error:', retryErr);
+          }
+        }
+      }
     } finally {
       setLoading(false);
     }

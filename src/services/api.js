@@ -1,198 +1,156 @@
 import axios from 'axios';
+import { auth } from '../utils/auth';
+import { tokenManager } from '../utils/tokenManager';
 
-const API_URL = import.meta.env.NODE_ENV === 'production' 
-  ? import.meta.env.VITE_PRODUCTION_API_URL 
-  : import.meta.env.VITE_API_URL;
-
+// Create axios instance with base configuration
 const api = axios.create({
-  baseURL: API_URL,
-  withCredentials: true,
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  }
+  baseURL: import.meta.env.VITE_APP_API_URL,
+  headers: { 'Content-Type': 'application/json' }
 });
 
-// Add request interceptor for CORS
-api.interceptors.request.use((config) => {
-  // Handle preflight
-  if (config.method === 'options') {
-    config.headers['Access-Control-Request-Method'] = config.method;
-  }
-  
-  return config;
-}, (error) => {
-  return Promise.reject(error);
-});
-
-// Add response interceptor for better error handling
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    console.error('API Error:', {
-      status: error.response?.status,
-      message: error.message,
-      url: error.config?.url
-    });
-    return Promise.reject(error);
-  }
-);
-
-// Update error handling
-const handleApiError = (error) => {
-  console.error('API Error:', {
-    message: error.message,
-    response: error.response?.data,
-    status: error.response?.status,
-    config: {
-      url: error.config?.url,
-      method: error.config?.method,
-      headers: error.config?.headers
-    }
-  });
-
-  if (error.response) {
-    throw error.response.data;
-  } else if (error.request) {
-    throw new Error('Server is not responding. Please check your connection.');
-  } else {
-    throw new Error('Request failed. Please try again.');
-  }
-};
-
-const getAuthHeaders = () => {
-  const userData = localStorage.getItem('userData');
-  const headers = {
-    'Content-Type': 'application/json',
-  };
-  
-  if (userData) {
-    const user = JSON.parse(userData);
-    headers['user-id'] = user._id;
-  }
-  
-  return headers;
-};
-
-// Add better error handling for localStorage
-const getStoredUserData = () => {
-  try {
-    const userData = localStorage.getItem('userData');
-    return userData ? JSON.parse(userData) : null;
-  } catch (error) {
-    console.error('Error reading userData from localStorage:', error);
-    return null;
-  }
-};
-
-// Add user-id to requests if available
-api.interceptors.request.use(config => {
-  const userData = getStoredUserData();
-  
-  if (userData) {
-    config.headers['user-id'] = userData._id;
-    config.headers['Authorization'] = `Bearer ${localStorage.getItem('token')}`;
-  }
-
-  console.log('API Request:', {
-    url: config.url,
-    method: config.method,
-    headers: config.headers,
-    environment: import.meta.env.NODE_ENV
-  });
-
-  return config;
-}, error => {
-  console.error('Request Interceptor Error:', error);
-  return Promise.reject(error);
-});
-
-// Add request interceptor logging
-api.interceptors.request.use(config => {
-  console.log('Making request:', {
-    url: config.url,
-    method: config.method,
-    headers: config.headers
-  });
-  return config;
-});
-
-// Add request interceptor
+// Request interceptor
 api.interceptors.request.use(
-  (config) => {
-    // Add authorization if needed
-    const token = localStorage.getItem('token');
+  async (config) => {
+    const token = auth.getToken();
+    
     if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Remove the Origin header setting from all interceptors
-api.interceptors.request.use(config => {
-  const userData = getStoredUserData();
-  
-  if (userData) {
-    config.headers['user-id'] = userData._id;
-    config.headers['Authorization'] = `Bearer ${localStorage.getItem('token')}`;
-  }
-
-  console.log('API Request:', {
-    url: config.url,
-    method: config.method,
-    headers: config.headers,
-    environment: import.meta.env.MODE
-  });
-
-  return config;
-}, error => {
-  console.error('Request Interceptor Error:', error);
-  return Promise.reject(error);
-});
-
-// Add response interceptor logging
-api.interceptors.response.use(
-  response => {
-    console.log('Response received:', {
-      url: response.config.url,
-      status: response.status,
-      data: response.data
-    });
-    return response;
-  },
-  error => {
-    handleApiError(error);
-  }
-);
-
-// Update request interceptor to handle malformed tokens
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        // Basic token format validation
-        if (token.split('.').length === 3) {
-          config.headers['Authorization'] = `Bearer ${token}`;
-        } else {
-          console.warn('Malformed token detected, proceeding without token');
-          localStorage.removeItem('token'); // Clear invalid token
-        }
-      } catch (error) {
-        console.warn('Token validation failed:', error);
-        localStorage.removeItem('token');
+      config.headers.Authorization = `Bearer ${token}`;
+      // Don't refresh session on /me endpoint to avoid loops
+      if (!config.url.includes('/users/me')) {
+        auth.refreshSession();
       }
     }
+
     return config;
   },
-  (error) => {
+  error => Promise.reject(error)
+);
+
+// Response interceptor
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401 && !error.config._retry) {
+      console.log('401 error, attempting recovery...');
+
+      // Get cached user data
+      const userData = auth.getUserData();
+      
+      if (userData && window.location.pathname.includes('dashboard')) {
+        console.log('Using cached data for dashboard');
+        return Promise.resolve({ 
+          data: { 
+            success: true, 
+            user: userData 
+          } 
+        });
+      }
+      
+      // Don't retry failed retries
+      if (error.config._retry) {
+        console.log('Recovery failed, using cache if available');
+        throw error;
+      }
+
+      // Mark as retry attempt
+      error.config._retry = true;
+      
+      // Return cached data for specific endpoints
+      if (error.config.url.includes('/users/me')) {
+        const cachedUser = auth.getUserData();
+        if (cachedUser) {
+          console.log('Using cached user data');
+          return Promise.resolve({
+            data: { success: true, user: cachedUser }
+          });
+        }
+      }
+    }
+    
     return Promise.reject(error);
   }
 );
+
+// API methods
+export const verifyPAN = async (pan) => {
+  try {
+    const { data } = await api.post(
+      `${import.meta.env.VITE_APP_API_URL}/users/verify-pan`,
+      { pan },
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+    return data;
+  } catch (error) {
+    if (error.response?.status === 404) {
+      return {
+        success: false,
+        message: 'No user found with this PAN number',
+        isNewUser: true
+      };
+    }
+    throw error;
+  }
+};
+
+export const login = async (credentials) => {
+  try {
+    const { data } = await api.post('/users/login', credentials);
+    
+    if (!data.success || !data.data?.token || !data.data?.user) {
+      throw new Error(data.message || 'Invalid login response');
+    }
+
+    // Store token and user data
+    auth.setAuth(data.data.token, data.data.user);
+    
+    return data.data;
+  } catch (error) {
+    console.error('Login error:', error);
+    auth.clearAuth(); // Clean up on error
+    throw error;
+  }
+};
+
+// Modified getMe function
+export const getMe = async () => {
+  // First check if we have valid cached data
+  const cachedUser = auth.getUserData();
+  if (cachedUser && window.location.pathname.includes('dashboard')) {
+    // On dashboard, prefer cached data
+    return { success: true, user: cachedUser };
+  }
+
+  try {
+    const token = auth.getToken();
+    if (!token) {
+      if (cachedUser) {
+        return { success: true, user: cachedUser };
+      }
+      throw new Error('No authentication token available');
+    }
+
+    const { data } = await api.get('/users/me', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    });
+
+    if (data.success && data.user) {
+      // Update cached data
+      auth.setAuth(token, data.user);
+    }
+
+    return data;
+  } catch (error) {
+    if (error.response?.status === 401 && cachedUser) {
+      // Return cached data on auth error if available
+      return { success: true, user: cachedUser };
+    }
+    throw error;
+  }
+};
 
 export const registerCustomer = async (userData) => {
   try {
@@ -265,53 +223,12 @@ export const registerCustomer = async (userData) => {
   }
 };
 
-export const login = async (credentials) => {
-  try {
-    const response = await api.post('/users/login', credentials);
-    
-    if (response.data.success) {
-      // Ensure data is properly stored
-      const { user, token } = response.data;
-      
-      localStorage.setItem('userData', JSON.stringify(user));
-      localStorage.setItem('token', token);
-      
-      // Verify data was stored
-      const storedUser = getStoredUserData();
-      if (!storedUser) {
-        throw new Error('Failed to store user data');
-      }
-      
-      console.log('Login successful:', {
-        userId: user._id,
-        environment: import.meta.env.NODE_ENV,
-        apiUrl: API_URL
-      });
-    }
-    return response.data;
-  } catch (error) {
-    console.error('Login Error:', error);
-    localStorage.removeItem('userData');
-    localStorage.removeItem('token');
-    throw error;
-  }
-};
-
-export const getMe = async () => {
-  try {
-    const response = await api.get('/users/me');
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || error.message;
-  }
-};
-
 export const logout = async () => {
   try {
-    const response = await api.post('/users/logout');
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || error.message;
+    await api.post('/users/logout');
+  } finally {
+    auth.clearAuth();
+    window.location.href = '/';
   }
 };
 
@@ -368,28 +285,6 @@ export const getTicketById = async (ticketId) => {
     return response.data;
   } catch (error) {
     handleApiError(error);
-  }
-};
-
-// Update verifyPAN function to handle errors better
-export const verifyPAN = async (pan) => {
-  try {
-    console.log('Sending PAN verification request:', pan);
-    const response = await api.post('/users/verify-pan', { pan });
-    console.log('PAN verification response:', response.data);
-    
-    // Handle both success and no-user-found cases
-    return response.data;
-  } catch (error) {
-    console.error('PAN verification error:', error);
-    if (error.response?.status === 404) {
-      return {
-        success: false,
-        message: 'No user found with this PAN number',
-        isNewUser: true
-      };
-    }
-    throw error;
   }
 };
 

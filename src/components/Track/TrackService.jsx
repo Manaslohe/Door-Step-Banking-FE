@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { Search } from 'lucide-react';
+import { Search, RefreshCcw } from 'lucide-react';
 import DashboardLayout from '../Dashboard/DashboardLayout';
 import ServiceCard from './ServiceCard';
 import LoadingSpinner from '../ui/LoadingSpinner';
@@ -85,7 +85,18 @@ const TrackService = () => {
   const { serviceId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { services, loading, error } = useServiceTracking();
+  const { services, loading, error, refreshServices } = useServiceTracking();
+
+  useEffect(() => {
+    // Debug log
+    console.log('Current services:', services);
+  }, [services]);
+
+  // Add refresh capability
+  useEffect(() => {
+    const interval = setInterval(refreshServices, 30000); // Refresh every 30 seconds
+    return () => clearInterval(interval);
+  }, []);
 
   // Preserve the page state even after reload
   useEffect(() => {
@@ -132,6 +143,14 @@ const TrackService = () => {
           <>
             <div className="flex justify-between items-center">
               <h1 className="text-2xl font-bold text-gray-900">Track Your Services</h1>
+              {/* Add refresh button */}
+              <button
+                onClick={refreshServices}
+                className="text-blue-600 hover:text-blue-700 flex items-center gap-2"
+              >
+                <RefreshCcw className="w-4 h-4" />
+                Refresh
+              </button>
             </div>
             <ServiceList 
               services={services}
