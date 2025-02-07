@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   ChevronLeft, User, Settings, LogOut, 
-  Bell, Menu, MinusSquare, PlusSquare
+  Bell, PanelLeft, PanelRightOpen
 } from 'lucide-react';
 import { useUser } from '../../hooks/useUser';
 import { EditUserModal } from '../Modals/EditUserModal';
@@ -11,7 +11,7 @@ import LanguageSwitcher from '../LanguageSwitcher';
 import { logout } from '../../services/api'; // Import the logout service
 import { auth } from '../../utils/auth'; // Import auth
 
-const Header = ({ toggleSidebar, toggleMinimize, isSidebarMinimized, isMobile }) => {
+const Header = ({ toggleSidebar, toggleMinimize, isSidebarMinimized, isMobile, isOpen }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const navigate = useNavigate();
@@ -88,6 +88,21 @@ const Header = ({ toggleSidebar, toggleMinimize, isSidebarMinimized, isMobile })
     }
   }, [user, loading, error, navigate]);
 
+  // Sidebar toggle button component
+  const SidebarToggleButton = ({ onClick, isOpen, className }) => (
+    <button 
+      onClick={onClick}
+      className={`p-2 rounded-lg hover:bg-white/10 
+        active:scale-95 transition-all duration-200 ${className}`}
+    >
+      {isOpen ? (
+        <PanelRightOpen className="w-6 h-6 text-white transform transition-transform duration-200" />
+      ) : (
+        <PanelLeft className="w-6 h-6 text-white transform transition-transform duration-200" />
+      )}
+    </button>
+  );
+
   if (loading) {
     return (
       <header className="bg-blue-700 shadow-lg fixed top-0 right-0 left-0 h-16 flex items-center justify-center">
@@ -109,32 +124,21 @@ const Header = ({ toggleSidebar, toggleMinimize, isSidebarMinimized, isMobile })
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 sm:gap-4">
           {/* Mobile menu button */}
-          {isMobile && (
-            <button 
-              onClick={toggleSidebar}
-              className="p-2 rounded-lg hover:bg-white/10 
-                active:scale-95 transition-all duration-200"
-            >
-              <Menu className="w-6 h-6 text-white" />
-            </button>
-          )}
-          
-          {/* Desktop minimize button */}
-          {!isMobile && (
-            <button 
-              onClick={toggleMinimize}
-              className="p-2 rounded-lg hover:bg-white/10 
-                transition-colors"
-            >
-              {isSidebarMinimized 
-                ? <PlusSquare className="w-6 h-6 text-white" />
-                : <MinusSquare className="w-6 h-6 text-white" />
-              }
-            </button>
+          {isMobile ? (
+            <SidebarToggleButton 
+              onClick={toggleSidebar} 
+              isOpen={isOpen} 
+            />
+          ) : (
+            /* Desktop minimize button */
+            <SidebarToggleButton 
+              onClick={toggleMinimize} 
+              isOpen={!isSidebarMinimized} 
+            />
           )}
 
           <div className="h-8 w-[2px] bg-white/20 mx-1 sm:mx-2" />
-
+          
           {/* Back button - always visible */}
           {!isDashboardPage && (
             <button 

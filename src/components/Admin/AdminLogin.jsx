@@ -45,7 +45,12 @@ const AdminLogin = ({ onClose }) => {
         userType: 'admin' // Ensure userType is set
       }));
 
-      navigate('/admin/dashboard');
+      if (response.ok) {
+        // Add small delay before navigation
+        setTimeout(() => {
+          navigate('/admin/dashboard', { replace: true });
+        }, 1000);
+      }
     } catch (err) {
       setError(err.message);
     } finally {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const DEFAULT_NEWS = [
   "RBI introduces new UPI-lite features for offline transactions",
@@ -107,8 +108,18 @@ const NewsTicker = ({ variant = 'default', autoPlayInterval = 5000 }) => {
 
   // Default variant styling
   return (
-    <div className="bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 text-white h-full">
-      <div className="container mx-auto h-full flex items-center px-4">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.7, delay: 2.4 }}
+      className="bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 text-white h-full"
+    >
+      <motion.div 
+        className="container mx-auto h-full flex items-center px-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, delay: 2.6 }}
+      >
         <div className="flex items-center justify-between w-full">
           {/* Latest Updates Badge */}
           <div className="flex items-center space-x-3 bg-white/10 px-4 py-1.5 rounded-full backdrop-blur-sm">
@@ -160,8 +171,8 @@ const NewsTicker = ({ variant = 'default', autoPlayInterval = 5000 }) => {
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
 

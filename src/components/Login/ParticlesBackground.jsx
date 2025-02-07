@@ -18,8 +18,8 @@ const ParticlesBackground = () => {
       constructor() {
         this.x = Math.random() * canvas.width;
         this.y = Math.random() * canvas.height;
-        this.speed = 0.1 + Math.random() * 0.2;
-        this.size = 1 + Math.random() * 2;
+        this.speed = 0.2 + Math.random() * 0.3; // Increased speed
+        this.size = 2 + Math.random() * 3; // Increased size
         this.direction = Math.random() * Math.PI * 2;
       }
 
@@ -35,15 +35,19 @@ const ParticlesBackground = () => {
 
       draw() {
         ctx.beginPath();
+        // Add glow effect
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = 'rgba(255, 255, 255, 0.5)';
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)'; // Increased opacity
         ctx.fill();
+        ctx.shadowBlur = 0; // Reset shadow for performance
       }
     }
 
     const init = () => {
       resizeCanvas();
-      particles = Array(50).fill().map(() => new Particle());
+      particles = Array(100).fill().map(() => new Particle()); // Increased particle count
     };
 
     const animate = () => {

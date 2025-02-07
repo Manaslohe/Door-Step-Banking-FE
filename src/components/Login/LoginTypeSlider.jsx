@@ -31,7 +31,7 @@ const LoginTypeSlider = ({ activeType, onTypeChange }) => {
         >
           <div className="flex items-center justify-center gap-3">
             <Shield className={`w-5 h-5 ${activeType === 'admin' ? 'animate-bounce' : ''}`} />
-            <span className="font-medium">Admin</span>
+            <span className="font-medium">Banker</span>
           </div>
         </button>
       </div>

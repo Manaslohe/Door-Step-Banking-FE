@@ -4,47 +4,38 @@ import {
   Building2 as Bank,
   UserPlus, 
   UserCheck,
-  LogIn, 
-  ArrowLeft, 
-  Loader2, 
-  CheckCircle, 
-  AlertCircle, 
-  Phone, 
-  Key,
   Shield,
   UserCog
 } from 'lucide-react';
 import QuoteBar from './Login/QuoteBar';
 import NewsTicker from './Login/NewsTicker';
 import RegisterTransition from './Login/RegisterTransition';
-import api from '../services/api';
 import LoginTypeSlider from './Login/LoginTypeSlider';
+import LoginModal from './shared/LoginModal';
+import CustomerLogin from './Login/CustomerLogin';
+import AdminLogin from './Admin/AdminLogin';
+import AgentLogin from './Agent/AgentLogin';
 import { auth } from '../utils/auth';
+import { motion, AnimatePresence } from 'framer-motion';
+import LoadingScreen from './shared/LoadingScreen';
+import logo from './logo.svg';
 
 const LandingPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [showLogin, setShowLogin] = useState(false);
-  const [panNumber, setPanNumber] = useState('');
-  const [otp, setOtp] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState('');
-  const [showOtpField, setShowOtpField] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterTransition, setShowRegisterTransition] = useState(false);
-  const [phoneLastDigits, setPhoneLastDigits] = useState('');
   const [loginType, setLoginType] = useState('customer');
+  const [activeLoginType, setActiveLoginType] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Add effect to handle navigation state
   useEffect(() => {
     if (location.state?.showLogin) {
-      setShowLogin(true);
-      // Clear the state to prevent showing login on refresh
+      setShowLoginModal(true);
       window.history.replaceState({}, document.title);
     }
   }, [location]);
 
-  // Initial auth check useEffect
   useEffect(() => {
     const checkAuth = () => {
       if (auth.isSessionValid()) {
@@ -54,14 +45,21 @@ const LandingPage = () => {
         }
       }
     };
-    
     checkAuth();
   }, [navigate]);
 
-  const handleLoginClick = () => {
-    const mainContent = document.querySelector('.main-content');
-    mainContent.classList.add('content-slide-out');
-    setShowLogin(true);
+  useEffect(() => {
+    // Simulate loading time
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleLoginClick = (type) => {
+    setActiveLoginType(type);
+    setShowLoginModal(true);
   };
 
   const handleNewUserClick = () => {
@@ -72,149 +70,192 @@ const LandingPage = () => {
     navigate('/register', { state: { fromTransition: true } });
   };
 
-  const handleBackClick = () => {
-    const loginContent = document.querySelector('.login-content');
-    loginContent.classList.add('content-slide-out');
-    setTimeout(() => {
-      setShowLogin(false);
-    }, 400); // Match animation duration
-  };
-
-  // Update PAN verification to include more user data
-  const handlePanSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    try {
-      console.log('Verifying PAN number:', panNumber.toUpperCase());
-      
-      const response = await api.verifyPAN(panNumber.toUpperCase());
-      console.log('Verification response:', response);
-      
-      if (response.success) {
-        setPhoneLastDigits(response.phone);
-        setShowOtpField(true);
-        localStorage.setItem('tempVerification', JSON.stringify(response));
-        setError('');
-      } else {
-        throw new Error(response.message || 'No account found with this PAN number');
+  const cardVariants = {
+    initial: {
+      opacity: 0,
+      y: 20,
+      filter: 'blur(10px)',
+      scale: 0.95
+    },
+    animate: {
+      opacity: 1,
+      y: 0,
+      filter: 'blur(0px)',
+      scale: 1,
+      transition: {
+        duration: 0.4,
+        ease: [0.4, 0, 0.2, 1]
       }
-    } catch (error) {
-      console.error('PAN verification error:', error);
-      setError(
-        error.response?.data?.message || 
-        error.message || 
-        'Failed to verify PAN. Please try again.'
-      );
-    } finally {
-      setLoading(false);
+    },
+    exit: {
+      opacity: 0,
+      y: -20,
+      filter: 'blur(10px)',
+      scale: 0.95,
+      transition: {
+        duration: 0.3,
+        ease: [0.4, 0, 1, 1]
+      }
     }
   };
 
-  const handleOtpSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    
-    try {
-      const tempData = localStorage.getItem('tempVerification');
-      if (!tempData) {
-        throw new Error('Verification data not found');
+  const containerVariants = {
+    initial: {
+      backgroundColor: 'rgba(255, 255, 255, 0)',
+    },
+    animate: {
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      transition: {
+        duration: 0.3,
+        staggerChildren: 0.1
       }
-      
-      const verificationData = JSON.parse(tempData);
-      
-      if (otp === '000000') {
-        const loginPayload = {
-          email: verificationData.user.email,
-          password: verificationData.user.phone,
-          pan: panNumber.toUpperCase()
-        };
-        
-        const loginResponse = await api.post('/users/login', loginPayload);
-        
-        if (loginResponse.data.success) {
-          const { token, user } = loginResponse.data.data;
-
-          // Set auth data and verify it was set correctly
-          const authSet = auth.setAuth(token, user);
-          if (!authSet) {
-            throw new Error('Failed to set authentication data');
-          }
-
-          // Verify session was established
-          if (!auth.isSessionValid()) {
-            throw new Error('Session validation failed');
-          }
-
-          setSuccess(true);
-          localStorage.removeItem('tempVerification');
-
-          // Add delay before navigation
-          setTimeout(() => {
-            navigate('/dashboard', { replace: true });
-          }, 1000);
-        }
-      } else {
-        throw new Error('Invalid OTP');
+    },
+    exit: {
+      backgroundColor: 'rgba(255, 255, 255, 0)',
+      transition: {
+        duration: 0.3,
+        staggerChildren: 0.05
       }
-    } catch (err) {
-      console.error('Login error:', err);
-      setError(err.message || 'Login failed');
-    } finally {
-      setLoading(false);
+    }
+  };
+
+  const mainContentVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        delay: 2,
+        duration: 0.5,
+        when: "beforeChildren",
+        staggerChildren: 0.2
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.5 }
     }
   };
 
   const renderLoginButtons = () => {
-    if (loginType === 'customer') {
-      return (
-        <>
-          <button onClick={handleNewUserClick} className="bg-white rounded-xl p-6 md:p-8 shadow-lg cursor-pointer transform transition-all duration-200 hover:scale-105 hover:shadow-xl border-2 border-blue-100 hover:border-blue-300">
-            <div className="flex flex-col items-center space-y-4">
-              <UserPlus className="w-16 h-16 text-blue-600" />
-              <div className="text-center">
-                <h3 className="text-2xl font-bold text-gray-800 mb-2">New User</h3>
-                <p className="text-gray-600 text-lg">Create your account</p>
-              </div>
-            </div>
-          </button>
+    return (
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={loginType}
+          variants={containerVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6"
+        >
+          {loginType === 'customer' ? (
+            <>
+              <motion.button
+                variants={cardVariants}
+                onClick={handleNewUserClick}
+                className="bg-white/95 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 
+                  border-2 border-blue-200 hover:border-blue-400 group backdrop-blur-sm min-h-[200px] md:min-h-[240px]"
+                whileHover={{ 
+                  scale: 1.02,
+                  transition: { duration: 0.2 }
+                }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="flex flex-col items-center justify-center h-full space-y-4">
+                  <UserPlus className="w-16 h-16 md:w-20 md:h-20 text-blue-600 group-hover:scale-110 transition-transform" />
+                  <div className="text-center w-full">
+                    <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1.5">New Customer</h3>
+                    <p className="text-base md:text-lg text-gray-700 font-medium truncate px-2">
+                      Create a new account with us
+                    </p>
+                  </div>
+                </div>
+              </motion.button>
+              
+              <motion.button
+                variants={cardVariants}
+                onClick={() => handleLoginClick('customer')}
+                className="bg-white/95 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 
+                  border-2 border-green-200 hover:border-green-400 group backdrop-blur-sm min-h-[200px] md:min-h-[240px]"
+                whileHover={{ 
+                  scale: 1.02,
+                  transition: { duration: 0.2 }
+                }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="flex flex-col items-center justify-center h-full space-y-4">
+                  <UserCheck className="w-16 h-16 md:w-20 md:h-20 text-green-600 group-hover:scale-110 transition-transform" />
+                  <div className="text-center w-full">
+                    <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1.5">Existing Customer</h3>
+                    <p className="text-base md:text-lg text-gray-700 font-medium truncate px-2">
+                      Sign in to your account
+                    </p>
+                  </div>
+                </div>
+              </motion.button>
+            </>
+          ) : (
+            <>
+              <motion.button
+                variants={cardVariants}
+                onClick={() => handleLoginClick('admin')}
+                className="bg-white/95 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 
+                  border-2 border-purple-200 hover:border-purple-400 group backdrop-blur-sm min-h-[200px] md:min-h-[240px]"
+                whileHover={{ 
+                  scale: 1.02,
+                  transition: { duration: 0.2 }
+                }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="flex flex-col items-center justify-center h-full space-y-4">
+                  <Shield className="w-16 h-16 md:w-20 md:h-20 text-purple-600 group-hover:scale-110 transition-transform" />
+                  <div className="text-center w-full">
+                    <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1.5">Banker Portal</h3>
+                    <p className="text-base md:text-lg text-gray-700 font-medium truncate px-2">
+                      Access banking controls
+                    </p>
+                  </div>
+                </div>
+              </motion.button>
 
-          <button onClick={handleLoginClick} className="bg-white rounded-xl p-6 md:p-8 shadow-lg cursor-pointer transform transition-all duration-200 hover:scale-105 hover:shadow-xl border-2 border-green-100 hover:border-green-300">
-            <div className="flex flex-col items-center space-y-4">
-              <UserCheck className="w-16 h-16 text-green-600" />
-              <div className="text-center">
-                <h3 className="text-2xl font-bold text-gray-800 mb-2">Existing User</h3>
-                <p className="text-gray-600 text-lg">Sign in to your account</p>
-              </div>
-            </div>
-          </button>
-        </>
-      );
-    } else {
-      return (
-        <>
-          <button onClick={() => navigate('/admin-login')} className="bg-white rounded-xl p-6 md:p-8 shadow-lg cursor-pointer transform transition-all duration-200 hover:scale-105 hover:shadow-xl border-2 border-purple-100 hover:border-purple-300">
-            <div className="flex flex-col items-center space-y-4">
-              <Shield className="w-16 h-16 text-purple-600" />
-              <div className="text-center">
-                <h3 className="text-2xl font-bold text-gray-800 mb-2">Admin Login</h3>
-                <p className="text-gray-600 text-lg">Access admin dashboard</p>
-              </div>
-            </div>
-          </button>
+              <motion.button
+                variants={cardVariants}
+                onClick={() => handleLoginClick('agent')}
+                className="bg-white/95 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 
+                  border-2 border-orange-200 hover:border-orange-400 group backdrop-blur-sm min-h-[200px] md:min-h-[240px]"
+                whileHover={{ 
+                  scale: 1.02,
+                  transition: { duration: 0.2 }
+                }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="flex flex-col items-center justify-center h-full space-y-4">
+                  <UserCog className="w-16 h-16 md:w-20 md:h-20 text-orange-600 group-hover:scale-110 transition-transform" />
+                  <div className="text-center w-full">
+                    <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1.5">Runner Portal</h3>
+                    <p className="text-base md:text-lg text-gray-700 font-medium truncate px-2">
+                      Access service portal
+                    </p>
+                  </div>
+                </div>
+              </motion.button>
+            </>
+          )}
+        </motion.div>
+      </AnimatePresence>
+    );
+  };
 
-          <button onClick={() => navigate('/agent-login')} className="bg-white rounded-xl p-6 md:p-8 shadow-lg cursor-pointer transform transition-all duration-200 hover:scale-105 hover:shadow-xl border-2 border-orange-100 hover:border-orange-300">
-            <div className="flex flex-col items-center space-y-4">
-              <UserCog className="w-16 h-16 text-orange-600" />
-              <div className="text-center">
-                <h3 className="text-2xl font-bold text-gray-800 mb-2">Agent Login</h3>
-                <p className="text-gray-600 text-lg">Access agent portal</p>
-              </div>
-            </div>
-          </button>
-        </>
-      );
+  const renderLoginComponent = () => {
+    switch (activeLoginType) {
+      case 'admin': return <AdminLogin onClose={() => setShowLoginModal(false)} />;
+      case 'agent': return <AgentLogin onClose={() => setShowLoginModal(false)} />;
+      case 'customer': return <CustomerLogin onClose={() => setShowLoginModal(false)} />;
+      default: return null;
     }
   };
 
@@ -223,127 +264,88 @@ const LandingPage = () => {
   }
 
   return (
-    <div className="min-h-screen h-auto bg-gradient-to-br from-blue-50 to-blue-100 flex flex-col overflow-hidden">
-      <QuoteBar />
+    <>
+      <AnimatePresence mode="wait">
+        {isLoading && <LoadingScreen />}
+      </AnimatePresence>
       
-      <LoginTypeSlider 
-        activeType={loginType}
-        onTypeChange={setLoginType}
-      />
-      
-      <div className="flex-1 relative overflow-hidden">
-        {!showLogin ? (
-          <div className="main-content absolute inset-0 flex flex-col items-center justify-center p-4 md:p-6 my-4">
-            {/* Landing Page Content */}
-            <div className="text-center mb-8 md:mb-12">
-              <div className="flex items-center justify-center mb-4">
-                <Bank className="w-12 h-12 md:w-16 md:h-16 text-blue-600 mr-4" />
-                <h1 className="text-4xl md:text-5xl font-bold text-gray-800">DoorBank</h1>
+      <motion.div 
+        className="min-h-screen flex flex-col overflow-hidden bg-gradient-to-br from-blue-50 via-white to-blue-50"
+        initial="hidden"
+        animate="visible"
+        variants={mainContentVariants}
+      >
+        <motion.div 
+          className="h-[12vh] min-h-[80px] max-h-[100px] shrink-0"
+          variants={itemVariants}
+        >
+          <QuoteBar />
+        </motion.div>
+        
+        <main className="flex-1 container mx-auto px-4 sm:px-6 py-4 flex flex-col justify-center relative">
+          <motion.div 
+            className="text-center mb-6 md:mb-8 mt-4 md:mt-0"
+            variants={itemVariants}
+          >
+            <div className="inline-flex items-center justify-center space-x-3 sm:space-x-4 mb-3">
+              <div className="relative flex items-center">
+                <img 
+                  src={logo} 
+                  alt="SaralBank Logo" 
+                  className="w-14 h-14 sm:w-20 sm:h-20 lg:w-24 lg:h-24 object-contain"
+                  style={{ filter: 'invert(27%) sepia(97%) saturate(1742%) hue-rotate(206deg) brightness(97%) contrast(101%)' }}
+                />
               </div>
-              <p className="text-xl md:text-2xl text-gray-600">Banking Services at Your Doorstep</p>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight">
+                <span className="bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                  SaralBank
+                </span>
+              </h1>
             </div>
+            <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto font-medium">
+              Banking Services at Your Doorstep
+            </p>
+          </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 max-w-4xl mx-auto w-full px-4">
+          <motion.div 
+            className="mb-6 md:mb-8"
+            variants={itemVariants}
+          >
+            <LoginTypeSlider 
+              activeType={loginType}
+              onTypeChange={setLoginType}
+            />
+          </motion.div>
+
+          <motion.div 
+            className="mb-6"
+            variants={itemVariants}
+          >
+            <div className="max-w-5xl mx-auto">
               {renderLoginButtons()}
             </div>
-          </div>
-        ) : (
-          <div className="login-content absolute inset-0 flex items-center justify-center p-4 content-slide-in my-4">
-            <div className={`max-w-md w-full bg-white rounded-2xl shadow-xl p-6 md:p-8 transform transition-all duration-300 ${success ? 'scale-105' : ''}`}>
-              <div className="flex items-center mb-6">
-                <button 
-                  onClick={handleBackClick} 
-                  className="p-2 hover:bg-blue-50 rounded-full transition-all duration-200 transform hover:scale-110 active:scale-95"
-                >
-                  <ArrowLeft className="w-6 h-6 text-blue-600" />
-                </button>
-                <h2 className="text-3xl font-bold text-gray-800 ml-4 bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-                  Welcome Back
-                </h2>
-              </div>
+          </motion.div>
+        </main>
+        
+        <motion.div 
+          className="h-[8vh] min-h-[40px] max-h-[60px] shrink-0"
+          variants={itemVariants}
+        >
+          <NewsTicker />
+        </motion.div>
 
-              <p className="text-gray-600 mb-8">
-                {showOtpField ? 'Enter the OTP sent to your phone' : 'Sign in with your PAN number'}
-              </p>
-
-              {error && (
-                <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 flex items-start space-x-2">
-                  <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
-                  <p className="text-red-600 text-sm">{error}</p>
-                </div>
-              )}
-
-              {success && (
-                <div className="mb-6 p-4 rounded-lg bg-green-50 border border-green-200 flex items-start space-x-2">
-                  <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
-                  <p className="text-green-600 text-sm">Login successful! Redirecting...</p>
-                </div>
-              )}
-
-              <form onSubmit={showOtpField ? handleOtpSubmit : handlePanSubmit} className="space-y-6">
-                {!showOtpField ? (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">PAN Number</label>
-                    <div className="relative">
-                      <Key className="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
-                      <input
-                        type="text"
-                        value={panNumber}
-                        onChange={(e) => setPanNumber(e.target.value.toUpperCase())}
-                        className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Enter PAN number"
-                        disabled={loading || success}
-                        maxLength={10}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500">Enter your PAN number to receive OTP on registered phone</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Enter OTP</label>
-                    <p className="text-sm text-blue-600 mb-2">
-                      OTP has been sent to phone number ending with {phoneLastDigits}
-                    </p>
-                    <div className="relative">
-                      <Key className="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
-                      <input
-                        type="text"
-                        value={otp}
-                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                        className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Enter 6-digit OTP"
-                        disabled={loading || success}
-                        maxLength={6}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500">Use 000000 for testing</p>
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={loading || success || (showOtpField ? otp.length !== 6 : panNumber.length !== 10)}
-                  className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : success ? (
-                    <CheckCircle className="w-5 h-5" />
-                  ) : (
-                    <>
-                      <LogIn className="w-5 h-5" />
-                      <span>{showOtpField ? 'Verify OTP' : 'Get OTP'}</span>
-                    </>
-                  )}
-                </button>
-              </form>
-            </div>
-          </div>
-        )}
-      </div>
-      
-      <NewsTicker />
-    </div>
+        <LoginModal 
+          isOpen={showLoginModal} 
+          onClose={() => {
+            setShowLoginModal(false);
+            setActiveLoginType(null);
+          }}
+          type={activeLoginType || loginType}
+        >
+          {renderLoginComponent()}
+        </LoginModal>
+      </motion.div>
+    </>
   );
 };
 

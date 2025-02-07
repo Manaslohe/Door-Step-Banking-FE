@@ -44,7 +44,13 @@ const AgentLogin = ({ onClose }) => {
 
       localStorage.setItem('agentToken', data.token);
       localStorage.setItem('agentUser', JSON.stringify(data.user));
-      navigate('/agent/dashboard');
+      
+      if (response.ok) {
+        // Add small delay before navigation
+        setTimeout(() => {
+          navigate('/agent/dashboard', { replace: true });
+        }, 1000);
+      }
 
     } catch (err) {
       setError(err.message);

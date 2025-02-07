@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   Users, Settings, BookOpen, 
@@ -6,10 +6,13 @@ import {
   X, MenuIcon, Activity, Clock, FileText, Home
 } from 'lucide-react';
 import { useTranslation } from '../../context/TranslationContext';
+import Logo from '../logo.svg';
+import FeedbackPopup from './FeedbackPopup';  // Add this import
 
 const Sidebar = ({ isOpen, isMinimized, isMobile, toggleSidebar }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [showFeedback, setShowFeedback] = useState(false);
   
   const navItems = [
     { path: '/user-dashboard', icon: Users, text: t.userDashboard },
@@ -65,18 +68,18 @@ const Sidebar = ({ isOpen, isMinimized, isMobile, toggleSidebar }) => {
             `}>
               <div className={`
                 bg-white/20 rounded-lg flex items-center justify-center
-                ${!isMobile && isMinimized ? 'w-12 h-12' : 'w-8 h-8'}
+                ${!isMobile && isMinimized ? 'w-12 h-12' : 'w-10 h-10'}
+                p-2
               `}>
-                <span className={`
-                  text-white font-bold
-                  ${!isMobile && isMinimized ? 'text-2xl' : 'text-xl'}
-                `}>
-                  D
-                </span>
+                <img 
+                  src={Logo} 
+                  alt="Logo" 
+                  className="w-full h-full object-contain filter brightness-0 invert" 
+                />
               </div>
               {(!isMinimized || isMobile) && (
                 <span className="text-2xl font-bold text-white/90">
-                  {t.dashboard}
+                  Home Page
                 </span>
               )}
             </div>
@@ -140,18 +143,29 @@ const Sidebar = ({ isOpen, isMinimized, isMobile, toggleSidebar }) => {
             ))}
           </nav>
 
-          {/* Support section - Show when not minimized or on mobile */}
+          {/* Replace support section with feedback button */}
           {(!isMinimized || isMobile) && (
-            <div className="mt-auto p-4 bg-white/10 rounded-xl
-              transition-all duration-300 hover:bg-white/15">
-              <div className="text-white/80 text-sm">
-                <p className="font-medium mb-1">{t.support}</p>
-                <p className="text-xs text-blue-100">{t.supportDescription}</p>
+            <div 
+              onClick={() => setShowFeedback(true)}
+              className="mt-auto p-4 bg-white/10 rounded-xl cursor-pointer
+                transition-all duration-300 hover:bg-white/15"
+            >
+              <div className="text-white/80 text-sm flex items-center gap-2">
+                <MessageSquare className="w-5 h-5" />
+                <div>
+                  <p className="font-medium mb-1">Share Feedback</p>
+                  <p className="text-xs text-blue-100">Help us improve our services</p>
+                </div>
               </div>
             </div>
           )}
         </div>
       </aside>
+
+      {/* Add Feedback Popup */}
+      {showFeedback && (
+        <FeedbackPopup onClose={() => setShowFeedback(false)} />
+      )}
     </div>
   );
 };

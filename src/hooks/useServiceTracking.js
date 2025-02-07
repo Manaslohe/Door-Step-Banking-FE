@@ -8,6 +8,14 @@ const useServiceTracking = (serviceId = null) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Add base URL resolution
+  const getBaseUrl = () => {
+    const isDevelopment = import.meta.env.MODE === 'development';
+    return isDevelopment 
+      ? 'http://localhost:5000/api'
+      : 'https://saralbe.vercel.app/api';
+  };
+
   useEffect(() => {
     let mounted = true;
     
@@ -33,46 +41,36 @@ const useServiceTracking = (serviceId = null) => {
           }
         };
 
-        const apiUrl = import.meta.env.VITE_APP_API_URL;
-        const userPhone = userData.phone.replace(/[^0-9]/g, ''); // Clean phone number
+        const baseUrl = getBaseUrl();
+        const userPhone = userData.phone.replace(/[^0-9]/g, '');
+        console.log('API URL:', baseUrl);
         console.log('Fetching services for phone:', userPhone);
         
         if (serviceId) {
-          const { data } = await axios.get(`${apiUrl}/services/${serviceId}`, config);
-          console.log('Service details response:', data); // Debug log
+          const { data } = await axios.get(`${baseUrl}/services/${serviceId}`, config);
           if (mounted && data?.service) {
             setServiceDetails(data.service);
           }
         } else {
-          // Use the userPhone field for querying services
-          const response = await axios.get(`${apiUrl}/services`, {
+          const response = await axios.get(`${baseUrl}/services`, {
             ...config,
-            params: {
-              userPhone // This will be used as a query parameter
-            }
+            params: { userPhone }
           });
-          
-          console.log('Services response:', response.data); // Debug log
 
-          if (mounted) {
-            if (response.data?.services || response.data?.data) {
-              const servicesList = Array.isArray(response.data.services) 
-                ? response.data.services 
-                : Array.isArray(response.data.data)
-                ? response.data.data
-                : [];
-              setServices(servicesList);
-              console.log('Set services:', servicesList.length); // Debug log
-            } else {
-              console.warn('No services found in response'); // Debug log
-              setServices([]);
-            }
+          if (mounted && response.data) {
+            const servicesList = response.data?.services || response.data?.data || [];
+            setServices(Array.isArray(servicesList) ? servicesList : []);
           }
         }
       } catch (err) {
-        console.error('Service tracking error:', err.response || err);
+        console.error('Service tracking error:', {
+          message: err.message,
+          status: err.response?.status,
+          url: err.config?.url,
+          data: err.response?.data
+        });
         if (mounted) {
-          setError(err.response?.data?.message || err.message);
+          setError(err.response?.data?.message || 'Failed to fetch services');
         }
       } finally {
         if (mounted) {
@@ -81,7 +79,6 @@ const useServiceTracking = (serviceId = null) => {
       }
     };
 
-    // Add delay to ensure auth is initialized
     setTimeout(checkAuthAndFetchData, 100);
     
     return () => { mounted = false; };
