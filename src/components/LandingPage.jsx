@@ -86,25 +86,26 @@ const LandingPage = () => {
     setError('');
     setLoading(true);
     try {
-      console.log('Verifying PAN:', panNumber);
-      // Don't need auth token for this request
-      const response = await api.post('/users/verify-pan', {
-        pan: panNumber.toUpperCase()
-      }, {
-        headers: { 'Content-Type': 'application/json' }
-      });
+      console.log('Verifying PAN number:', panNumber.toUpperCase());
       
-      if (response.data.success) {
-        setPhoneLastDigits(response.data.phone);
+      const response = await api.verifyPAN(panNumber.toUpperCase());
+      console.log('Verification response:', response);
+      
+      if (response.success) {
+        setPhoneLastDigits(response.phone);
         setShowOtpField(true);
-        localStorage.setItem('tempVerification', JSON.stringify(response.data));
+        localStorage.setItem('tempVerification', JSON.stringify(response));
         setError('');
       } else {
-        setError('No account found with this PAN number. Please check and try again.');
+        throw new Error(response.message || 'No account found with this PAN number');
       }
     } catch (error) {
       console.error('PAN verification error:', error);
-      setError(error.response?.data?.message || 'Failed to verify PAN');
+      setError(
+        error.response?.data?.message || 
+        error.message || 
+        'Failed to verify PAN. Please try again.'
+      );
     } finally {
       setLoading(false);
     }

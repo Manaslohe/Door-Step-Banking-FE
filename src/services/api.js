@@ -1,26 +1,33 @@
 import axios from 'axios';
 import { auth } from '../utils/auth';
-import { tokenManager } from '../utils/tokenManager';
+
+// Determine the base URL based on the current environment
+const getBaseUrl = () => {
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  return isDevelopment 
+    ? 'http://localhost:5000/api'
+    : 'https://saralbe.vercel.app/api';
+};
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: import.meta.env.VITE_APP_API_URL,
-  headers: { 'Content-Type': 'application/json' }
+  baseURL: getBaseUrl(),
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  withCredentials: true // Enable sending cookies with requests
 });
 
 // Request interceptor
 api.interceptors.request.use(
   async (config) => {
     const token = auth.getToken();
-    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      // Don't refresh session on /me endpoint to avoid loops
       if (!config.url.includes('/users/me')) {
         auth.refreshSession();
       }
     }
-
     return config;
   },
   error => Promise.reject(error)
@@ -72,22 +79,19 @@ api.interceptors.response.use(
 );
 
 // API methods
-export const verifyPAN = async (pan) => {
+api.verifyPAN = async (pan) => {
   try {
-    const { data } = await api.post(
-      `${import.meta.env.VITE_APP_API_URL}/users/verify-pan`,
-      { pan },
-      { headers: { 'Content-Type': 'application/json' } }
-    );
+    console.log('Making PAN verification request to:', `${api.defaults.baseURL}/users/verify-pan`);
+    const { data } = await api.post('/users/verify-pan', { pan });
+    console.log('PAN verification response:', data);
     return data;
   } catch (error) {
-    if (error.response?.status === 404) {
-      return {
-        success: false,
-        message: 'No user found with this PAN number',
-        isNewUser: true
-      };
-    }
+    console.error('PAN Verification Error:', {
+      url: error.config?.url,
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message
+    });
     throw error;
   }
 };
