@@ -5,15 +5,13 @@ import {
   Bell, PanelLeft, PanelRightOpen
 } from 'lucide-react';
 import { useUser } from '../../hooks/useUser';
-import { EditUserModal } from '../Modals/EditUserModal';
 import { useTranslation } from '../../context/TranslationContext';
 import LanguageSwitcher from '../LanguageSwitcher';
 import { logout } from '../../services/api'; // Import the logout service
 import { auth } from '../../utils/auth'; // Import auth
 
-const Header = ({ toggleSidebar, toggleMinimize, isSidebarMinimized, isMobile, isOpen }) => {
+const Header = ({ toggleSidebar, toggleMinimize, isSidebarMinimized, isMobile, isOpen, onEditProfile }) => { // Add onEditProfile prop
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, loading, error, setUser } = useUser(); // Destructure setUser from useUser hook
@@ -53,15 +51,6 @@ const Header = ({ toggleSidebar, toggleMinimize, isSidebarMinimized, isMobile, i
       // Force logout even if API call fails
       localStorage.removeItem('userData');
       navigate('/', { replace: true });
-    }
-  };
-
-  const handleUserUpdate = async (updatedUser) => {
-    try {
-      setUser(updatedUser); // Update user state using the setUser from useUser hook
-      setIsEditModalOpen(false);
-    } catch (error) {
-      console.error('Update user error:', error);
     }
   };
 
@@ -201,7 +190,7 @@ const Header = ({ toggleSidebar, toggleMinimize, isSidebarMinimized, isMobile, i
               >
                 <button 
                   onClick={() => {
-                    setIsEditModalOpen(true);
+                    onEditProfile(); // Call the new prop instead of setting modal state
                     setIsProfileOpen(false);
                   }}
                   className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 w-full text-left"
@@ -237,16 +226,6 @@ const Header = ({ toggleSidebar, toggleMinimize, isSidebarMinimized, isMobile, i
           </div>
         </div>
       </div>
-
-      {/* EditUserModal */}
-      {isEditModalOpen && (
-        <EditUserModal
-          user={user}
-          isOpen={isEditModalOpen}
-          onClose={() => setIsEditModalOpen(false)}
-          onUpdate={handleUserUpdate}
-        />
-      )}
     </header>
   );
 };

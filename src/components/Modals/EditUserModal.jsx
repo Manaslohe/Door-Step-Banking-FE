@@ -388,8 +388,8 @@ export const EditUserModal = ({ user, isOpen, onClose, onUpdate }) => {
   );
 
   return (
-    <div className={`fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-0 sm:p-4 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'} transition-opacity`}>
-      <div className={`bg-white rounded-xl shadow-xl w-full h-[90vh] sm:h-auto sm:max-w-6xl sm:m-4 sm:max-h-[80vh] overflow-y-auto transform ${isOpen ? 'scale-100' : 'scale-95'} transition-transform`}>
+    <div className={`fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start sm:items-center justify-center z-[1000] overflow-y-auto p-0 sm:p-4 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'} transition-opacity`}>
+      <div className={`relative bg-white rounded-xl shadow-xl w-full h-full sm:h-auto sm:max-w-6xl sm:m-4 sm:max-h-[90vh] overflow-y-auto transform ${isOpen ? 'scale-100' : 'scale-95'} transition-transform`}>
         <div className="sticky top-0 z-10 bg-white flex items-center justify-between p-2 sm:p-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
             {isEditing ? (

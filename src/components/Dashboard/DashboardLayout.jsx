@@ -2,13 +2,17 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import Chatbot from '../chatbot';
+import { EditUserModal } from '../Modals/EditUserModal';
 import { MessageSquare } from 'lucide-react';
+import { useUser } from '../../hooks/useUser';
 
 const DashboardLayout = ({ children }) => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile);
   const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const { user, setUser } = useUser();
 
   useEffect(() => {
     const handleResize = () => {
@@ -25,6 +29,11 @@ const DashboardLayout = ({ children }) => {
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  const handleUserUpdate = (updatedUser) => {
+    setUser(updatedUser);
+    setIsEditModalOpen(false);
   };
 
   return (
@@ -49,9 +58,18 @@ const DashboardLayout = ({ children }) => {
           toggleMinimize={() => setIsSidebarMinimized(!isSidebarMinimized)}
           isSidebarMinimized={isSidebarMinimized}
           isMobile={isMobile}
+          onEditProfile={() => setIsEditModalOpen(true)}
         />
         <main className="mt-20 transition-all duration-300 ease-in-out p-6 relative">
           {children}
+
+          {/* EditUserModal */}
+          <EditUserModal
+            user={user}
+            isOpen={isEditModalOpen}
+            onClose={() => setIsEditModalOpen(false)}
+            onUpdate={handleUserUpdate}
+          />
 
           {/* Chatbot FAB */}
           <div className="fixed bottom-0 right-0 mb-20 mr-6 z-[9999] print:hidden">
