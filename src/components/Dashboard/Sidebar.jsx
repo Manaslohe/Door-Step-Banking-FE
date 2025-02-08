@@ -15,14 +15,15 @@ const Sidebar = ({ isOpen, isMinimized, isMobile, toggleSidebar }) => {
   const [showFeedback, setShowFeedback] = useState(false);
   
   const navItems = [
-    { path: '/user-dashboard', icon: Users, text: t.userDashboard },
+    { path: '/dashboard', icon: Home, text: 'Home' },
+    { path: '/user-dashboard', icon: Users, text: 'User Profile' },
     { path: '/services-offered', icon: Settings, text: t.servicesOffered },
     { path: '/rbi-guidelines', icon: BookOpen, text: t.rbiGuidelines },
     { path: '/blog-forum', icon: MessageSquare, text: t.blogForum },
     { path: '/pricing-structure', icon: DollarSign, text: t.pricingStructure },
-    { path: '/support', icon: HelpCircle, text: t.support },
     { path: '/track-service', icon: Clock, text: 'Track Service' },
     { path: '/track-ticket', icon: FileText, text: 'Track Ticket' },
+    { path: '/support', icon: HelpCircle, text: t.support }, // Moved to bottom
   ];
 
   // Mobile-only: Hide completely when closed
@@ -78,7 +79,7 @@ const Sidebar = ({ isOpen, isMinimized, isMobile, toggleSidebar }) => {
               </div>
               {(!isMinimized || isMobile) && (
                 <span className="text-2xl font-bold text-white/90">
-                  Home Page
+                  Saral Bank
                 </span>
               )}
             </div>
@@ -98,6 +99,8 @@ const Sidebar = ({ isOpen, isMinimized, isMobile, toggleSidebar }) => {
           <nav className={`
             flex-1 space-y-2 overflow-y-auto
             ${!isMobile && isMinimized ? 'flex flex-col items-center' : ''}
+            scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10
+            hover:scrollbar-thumb-white/20 scroll-smooth
           `}>
             {navItems.map((item, index) => (
               <NavLink

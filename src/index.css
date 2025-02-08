@@ -78,3 +78,30 @@
 .slick-slider {
   margin-bottom: 0;
 }
+
+/* Hide scrollbar by default */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+}
+
+/* Track */
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Handle */
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+}
+
+/* Handle on hover */
+.scrollbar-thin:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Firefox scrollbar styling */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}

@@ -11,7 +11,7 @@ export const translations = {
     // Dashboard translations
     servicesOffered: 'Services Offered',
     servicesDescription: 'View all banking services available at your doorstep',
-    userDashboard: 'User Dashboard',
+    userDashboard: 'User Profile',
     userDashboardDescription: 'Manage your profile and preferences',
     blogForum: 'Blog/Forum',
     blogDescription: 'Join discussions and stay updated with latest banking news',
@@ -36,7 +36,7 @@ export const translations = {
     chatbotError: "I'm sorry, I'm having trouble connecting right now. Please try again later.",
 
     // Sidebar translations
-    dashboard: 'Dashboard',
+    dashboard: 'Home',
     needHelp: 'Need Help?',
     contactSupport: 'Contact our support team'
   },
@@ -50,7 +50,7 @@ export const translations = {
     // Dashboard translations
     servicesOffered: 'बैंकिंग सेवाएं',
     servicesDescription: 'आपके द्वार पर उपलब्ध सभी बैंकिंग सेवाएं',
-    userDashboard: 'उपयोगकर्ता डैशबोर्ड',
+    userDashboard: 'यूजर प्रोफाइल',
     userDashboardDescription: 'अपनी प्रोफ़ाइल और सेटिंग्स प्रबंधित करें',
     blogForum: 'ब्लॉग/फोरम',
     blogDescription: 'चर्चाओं में शामिल हों और नवीनतम बैंकिंग समाचार प्राप्त करें',
@@ -75,7 +75,7 @@ export const translations = {
     chatbotError: "क्षमा करें, मैं अभी कनेक्ट होने में असमर्थ हूं। कृपया बाद में पुनः प्रयास करें।",
 
     // Sidebar translations
-    dashboard: 'डैशबोर्ड',
+    dashboard: 'होम',
     needHelp: 'मदद चाहिए?',
     contactSupport: 'हमारी सहायता टीम से संपर्क करें'
   }
