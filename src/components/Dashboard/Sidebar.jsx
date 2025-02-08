@@ -15,15 +15,15 @@ const Sidebar = ({ isOpen, isMinimized, isMobile, toggleSidebar }) => {
   const [showFeedback, setShowFeedback] = useState(false);
   
   const navItems = [
-    { path: '/dashboard', icon: Home, text: 'Home' },
-    { path: '/user-dashboard', icon: Users, text: 'User Profile' },
-    { path: '/services-offered', icon: Settings, text: t.servicesOffered },
-    { path: '/rbi-guidelines', icon: BookOpen, text: t.rbiGuidelines },
-    { path: '/blog-forum', icon: MessageSquare, text: t.blogForum },
-    { path: '/pricing-structure', icon: DollarSign, text: t.pricingStructure },
-    { path: '/track-service', icon: Clock, text: 'Track Service' },
-    { path: '/track-ticket', icon: FileText, text: 'Track Ticket' },
-    { path: '/support', icon: HelpCircle, text: t.support }, // Moved to bottom
+    { path: '/dashboard', icon: Home, text: t.menu.home },
+    { path: '/user-dashboard', icon: Users, text: t.menu.userProfile },
+    { path: '/services-offered', icon: Settings, text: t.menu.bankingServices },
+    { path: '/rbi-guidelines', icon: BookOpen, text: t.menu.rbiGuidelines },
+    { path: '/blog-forum', icon: MessageSquare, text: t.menu.blogForum },
+    { path: '/pricing-structure', icon: DollarSign, text: t.menu.pricing },
+    { path: '/track-service', icon: Clock, text: t.menu.trackService },
+    { path: '/track-ticket', icon: FileText, text: t.menu.trackTicket },
+    { path: '/support', icon: HelpCircle, text: t.menu.support },
   ];
 
   // Mobile-only: Hide completely when closed
@@ -155,8 +155,8 @@ const Sidebar = ({ isOpen, isMinimized, isMobile, toggleSidebar }) => {
               <div className="text-white/80 text-sm flex items-center gap-2">
                 <MessageSquare className="w-5 h-5" />
                 <div>
-                  <p className="font-medium mb-1">Share Feedback</p>
-                  <p className="text-xs text-blue-100">Help us improve our services</p>
+                  <p className="font-medium mb-1">{t.menu.feedback.title}</p>
+                  <p className="text-xs text-blue-100">{t.menu.feedback.subtitle}</p>
                 </div>
               </div>
             </div>

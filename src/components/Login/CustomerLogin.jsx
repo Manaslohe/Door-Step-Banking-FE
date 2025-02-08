@@ -24,6 +24,18 @@ const CustomerLogin = ({ onClose }) => {
   const [phoneLastDigits, setPhoneLastDigits] = useState('');
   const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
 
+  const isPanValid = (pan) => {
+    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+    return pan.length === 10 && panRegex.test(pan);
+  };
+
+  const handlePanChange = (e) => {
+    const value = e.target.value.toUpperCase();
+    if (value.length <= 10) { // Only allow up to 10 characters
+      setPanNumber(value);
+    }
+  };
+
   const handlePanSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -203,17 +215,33 @@ const CustomerLogin = ({ onClose }) => {
                 <input
                   type="text"
                   value={panNumber}
-                  onChange={(e) => setPanNumber(e.target.value.toUpperCase())}
-                  className="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-gray-100 
-                    focus:border-blue-500 focus:ring-4 focus:ring-blue-100 
+                  onChange={handlePanChange}
+                  className={`w-full pl-12 pr-4 py-4 rounded-xl border-2 
+                    focus:ring-4 focus:ring-blue-100 
                     text-lg transition-all duration-300 bg-white/50 backdrop-blur-sm
-                    placeholder-gray-400 group-hover:border-gray-300"
-                  placeholder="Enter your PAN number"
+                    placeholder-gray-400 group-hover:border-gray-300
+                    ${panNumber.length === 10 
+                      ? isPanValid(panNumber)
+                        ? 'border-green-200 focus:border-green-500'
+                        : 'border-red-200 focus:border-red-500'
+                      : 'border-gray-100 focus:border-blue-500'
+                    }`}
+                  placeholder="ABCDE1234F"
                   maxLength={10}
                   required
                 />
               </div>
-              <p className="text-sm text-gray-500 ml-1">Enter your PAN number to receive OTP</p>
+              <div className="flex justify-between items-center ml-1">
+                <p className="text-sm text-gray-500">Enter your PAN number to receive OTP</p>
+                <span className={`text-sm ${panNumber.length === 10 
+                  ? isPanValid(panNumber) 
+                    ? 'text-green-600' 
+                    : 'text-red-600'
+                  : 'text-gray-400'
+                }`}>
+                  {panNumber.length}/10
+                </span>
+              </div>
             </div>
           ) : (
             renderOtpSection()
@@ -222,14 +250,19 @@ const CustomerLogin = ({ onClose }) => {
 
         <motion.button
           type="submit"
-          disabled={loading || success || (showOtpField ? otp.join('').length !== 6 : panNumber.length !== 10)}
-          whileHover={{ scale: 1.01 }}
-          whileTap={{ scale: 0.99 }}
+          disabled={loading || success || (showOtpField ? otp.join('').length !== 6 : !isPanValid(panNumber))}
+          whileHover={{ scale: loading || success ? 1 : 1.01 }}
+          whileTap={{ scale: loading || success ? 1 : 0.99 }}
           className={`w-full py-4 rounded-xl transition-all duration-300 
             flex items-center justify-center space-x-2 text-lg font-medium
-            ${loading || success ? 
-              success ? 'bg-green-500 text-white' : 'bg-gray-100 cursor-not-allowed' : 
-              'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl'}`}
+            ${loading || success 
+              ? success 
+                ? 'bg-green-500 text-white' 
+                : 'bg-gray-100 cursor-not-allowed text-gray-400' 
+              : !isPanValid(panNumber) && !showOtpField
+                ? 'bg-gray-100 cursor-not-allowed text-gray-400'
+                : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl'
+            }`}
         >
           {loading ? (
             <Loader2 className="w-6 h-6 animate-spin" />

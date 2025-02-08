@@ -30,12 +30,12 @@ const Dashboard = () => {
   useEffect(() => {
     const getGreeting = () => {
       const hour = new Date().getHours();
-      if (hour < 12) return 'Good Morning';
-      if (hour < 18) return 'Good Afternoon';
-      return 'Good Evening';
+      if (hour < 12) return t.greeting.morning;
+      if (hour < 18) return t.greeting.afternoon;
+      return t.greeting.evening;
     };
     setGreeting(getGreeting());
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     const validateSession = async () => {
@@ -71,6 +71,27 @@ const Dashboard = () => {
       </div>
     );
   }
+
+  const stats = [
+    { 
+      icon: Clock, 
+      title: t.stats.available.title,
+      subtitle: t.stats.available.subtitle,
+      gradient: 'from-blue-500 to-blue-600'
+    },
+    { 
+      icon: Shield, 
+      title: t.stats.secure.title,
+      subtitle: t.stats.secure.subtitle,
+      gradient: 'from-emerald-500 to-emerald-600'
+    },
+    { 
+      icon: TrendingUp, 
+      title: t.stats.fast.title,
+      subtitle: t.stats.fast.subtitle,
+      gradient: 'from-indigo-500 to-indigo-600'
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -138,10 +159,10 @@ const Dashboard = () => {
                       {greeting},
                     </div>
                     <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight leading-tight">
-                      Welcome back to <span className="text-blue-200">Saral Bank</span>
+                      {t.welcomeBack} <span className="text-blue-200">{t.bankName}</span>
                     </h1>
                     <p className="text-blue-50 text-sm sm:text-base opacity-90">
-                      Your trusted financial partner for seamless banking
+                      {t.trustedPartner}
                     </p>
                     {/* Mobile-only button */}
                     <div className="block lg:hidden mt-4">
@@ -152,7 +173,7 @@ const Dashboard = () => {
                           bg-white rounded-lg transition-all duration-300
                           hover:bg-blue-50 transform hover:-translate-y-1 shadow-lg hover:shadow-xl"
                       >
-                        <span>Explore Our Services</span>
+                        <span>{t.exploreServices}</span>
                         <ArrowRight className="w-4 h-4" />
                       </button>
                     </div>
@@ -168,7 +189,7 @@ const Dashboard = () => {
                       bg-white rounded-xl transition-all duration-300
                       hover:bg-blue-50 transform hover:-translate-y-1 shadow-lg hover:shadow-xl"
                   >
-                    <span>Explore Our Services</span>
+                    <span>{t.exploreServices}</span>
                     <ArrowRight className="w-5 h-5" />
                   </button>
                 </div>
@@ -178,26 +199,7 @@ const Dashboard = () => {
 
           {/* Stats Grid - Mobile Optimized */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 mb-6 lg:mb-8">
-            {[
-              { 
-                icon: Clock, 
-                title: '24/7', 
-                subtitle: 'Always Available',
-                gradient: 'from-blue-500 to-blue-600'
-              },
-              { 
-                icon: Shield, 
-                title: '100%', 
-                subtitle: 'Secure Banking',
-                gradient: 'from-emerald-500 to-emerald-600'
-              },
-              { 
-                icon: TrendingUp, 
-                title: 'Fast', 
-                subtitle: 'Instant Transfers',
-                gradient: 'from-indigo-500 to-indigo-600'
-              }
-            ].map((stat, index) => (
+            {stats.map((stat, index) => (
               <div key={index} className="group relative">
                 <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-5 rounded-xl lg:rounded-2xl`} />
                 <div className="relative bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 
