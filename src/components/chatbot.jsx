@@ -9,25 +9,73 @@ import {
   MessageInput,
   TypingIndicator,
 } from '@chatscope/chat-ui-kit-react';
-import { X, Volume2, VolumeX, Send, MessageSquare, Mic, MicOff } from 'lucide-react';
+import { X, Volume2, VolumeX, Send, MessageSquare, Mic, MicOff } from 'lucide-react'; // Add these imports
 import { useTranslation } from '../context/TranslationContext';
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "your_default_api_key";
 
-const systemContext = `You are a Door Step Banking Assistant. Key information:
-- Website: Door Step Banking Services
-- Owner: Manas Lohe
-- Contact: 9420718136
-- Limit all responses to 50 words or less
-- Focus on banking services delivered to customer's doorstep
-- Be concise and professional
-- If language is Hindi, respond in Hindi language
-If asked about contact details, provide the owner's name and number.`;
+const systemContext = `You are Saral Bot, a Doorstep Banking Assistant. Key Information:
+
+Website: Saral Banking ~ Banking at your Door Step
+Founders: Manas Lohe, Roshtu Kuthiala, Shivam Rawat
+Contact: 9420718136, 7982741823, 964311681
+
+Service Navigation Guidelines:
+When explaining any service, follow this pattern:
+1. First explain what the service is
+2. Then explain step-by-step how to access it
+3. Mention any requirements or documents needed
+4. Explain how to track the service status
+5. Be concise but informative
+
+Available Services:
+
+1. Cash Deposit
+- Purpose: Deposit cash directly from your doorstep
+- Steps: Home → Services → Cash Deposit → Fill details → OTP verification
+- Requirements: Valid ID, Account details
+- Tracking: Use Track Service section
+
+2. Cash Withdrawal
+- Purpose: Get cash delivered to your doorstep
+- Steps: Home → Services → Cash Withdrawal → Amount & details → OTP verify
+- Requirements: Account details, Valid ID
+- Tracking: Track Service section
+
+3. Open New Account
+- Purpose: Start new bank account with doorstep verification
+- Steps: Home → Services → Open Account → Fill form → Submit → Schedule verification
+- Documents: ID proof, Address proof, Photos
+- Tracking: Track Service section
+
+4. Document Collection/Delivery
+- Purpose: Submit or receive bank documents from home
+- Steps: Home → Services → Document Services → Select type → Schedule
+- Tracking: Track Service section
+
+5. Life Certificate Collection
+- Purpose: Pension life certificate verification at home
+- Steps: Home → Services → Life Certificate → Details → Schedule visit
+- Requirements: Pension details, Valid ID
+- Tracking: Track Service section
+
+6. Online Assistance
+- Purpose: Virtual banking support
+- Steps: Home → Services → Online Assistance → Schedule meeting
+- Available 24/7
+
+For any issues:
+1. Use Support section from Home page
+2. Fill support form
+3. Track ticket in "Track Tickets" section
+4. Contact: 9420718136, 7982741823, 964311681
+
+Remember to be conversational and helpful. When someone asks about a service, explain its purpose and process clearly.`;
 
 const Chatbot = ({ onClose }) => {
   const [messages, setMessages] = useState([
     {
-      message: "Hi, I'm Aleeza your Door Step Banking Assistant. How may I help you with banking services today?",
+      message: "Hi, I'm Saral Bot your Door Step Banking Assistant. How may I help you with banking services today?",
       sentTime: "just now",
       sender: "ChatGPT"
     }
@@ -124,8 +172,8 @@ const Chatbot = ({ onClose }) => {
       
       // Define preferred voice names for each language
       const preferredVoices = {
-        hindi: ['Microsoft Swara Online (Natural) - Hindi (India)', 'Microsoft Heera', 'hi-IN-Female', 'Kalpana'],
-        english: ['Microsoft Michelle', 'Microsoft Zira', 'en-US-Female', 'Google US English Female']
+        hindi: ['Microsoft Swara Online (Natural) - Hindi (India)', 'Microsoft Heera', 'hi-IN-Female'],
+        english: ['Microsoft David', 'Microsoft Mark', 'en-US-Male']
       };
       
       let selectedVoice = null;
@@ -250,12 +298,27 @@ const Chatbot = ({ onClose }) => {
   async function processMessageToChatGPT(chatMessages) {
     const lastMessage = chatMessages[chatMessages.length - 1];
 
-    const systemPrompt = `${systemContext}
-Current language: ${language}
-Please respond in ${language === 'hindi' ? 'Hindi' : 'English'} language.
+    const prompt = {
+      contents: [{
+        parts: [{
+          text: `${systemContext}
 
-User: ${lastMessage.message}
-Assistant: Please provide a concise response (max 50 words):`;
+Current language: ${language}
+Respond in ${language === 'hindi' ? 'Hindi' : 'English'} language.
+Keep responses under 50 words.
+Be helpful and friendly.
+
+User question: ${lastMessage.message}
+
+Remember to:
+1. Be concise and clear
+2. Focus on the specific service or question asked
+3. Provide step-by-step guidance if needed
+4. Include any relevant requirements or documents needed
+5. Mention how to track the service if applicable`
+        }]
+      }]
+    };
 
     try {
       if (!API_KEY) {
@@ -269,13 +332,7 @@ Assistant: Please provide a concise response (max 50 words):`;
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: systemPrompt
-              }]
-            }]
-          })
+          body: JSON.stringify(prompt)
         }
       );
 
@@ -284,21 +341,31 @@ Assistant: Please provide a concise response (max 50 words):`;
       }
 
       const data = await response.json();
-      
-      if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
-        const responseMessage = data.candidates[0].content.parts[0].text;
-        setMessages([...chatMessages, {
-          message: responseMessage,
-          sender: "ChatGPT"
-        }]);
-        speakMessage(responseMessage);
+      console.log('API Response:', data); // Debug log
+
+      // Updated response handling
+      if (data && data.candidates && data.candidates[0] && data.candidates[0].content) {
+        const responseText = data.candidates[0].content.parts[0]?.text?.trim();
+        if (responseText) {
+          setMessages([...chatMessages, {
+            message: responseText,
+            sender: "ChatGPT"
+          }]);
+          speakMessage(responseText);
+        } else {
+          throw new Error('Empty response from API');
+        }
       } else {
-        throw new Error('Invalid response format');
+        throw new Error('Invalid response structure from API');
       }
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Chatbot error:", error);
+      const errorMessage = language === 'hindi' 
+        ? 'माफ़ कीजिये, मैं अभी आपकी सहायता नहीं कर सकता। कृपया कुछ देर बाद प्रयास करें।'
+        : "I'm sorry, I can't help right now. Please try again later.";
+      
       setMessages([...chatMessages, {
-        message: t.chatbotError,
+        message: errorMessage,
         sender: "ChatGPT"
       }]);
     } finally {

@@ -2,17 +2,13 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import Chatbot from '../chatbot';
-import { EditUserModal } from '../Modals/EditUserModal';
 import { MessageSquare } from 'lucide-react';
-import { useUser } from '../../hooks/useUser';
 
 const DashboardLayout = ({ children }) => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile);
   const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
   const [showChat, setShowChat] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const { user, setUser } = useUser();
 
   useEffect(() => {
     const handleResize = () => {
@@ -31,19 +27,8 @@ const DashboardLayout = ({ children }) => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
-  const handleUserUpdate = (updatedUser) => {
-    setUser(updatedUser);
-    setIsEditModalOpen(false);
-  };
-
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-blue-50 to-white">
-      <Sidebar 
-        isOpen={isSidebarOpen} 
-        isMinimized={isSidebarMinimized}
-        isMobile={isMobile}
-        toggleSidebar={toggleSidebar}
-      />
       <div className={`
         flex-1 transition-all duration-300 ease-in-out
         ${isSidebarOpen 
@@ -58,18 +43,9 @@ const DashboardLayout = ({ children }) => {
           toggleMinimize={() => setIsSidebarMinimized(!isSidebarMinimized)}
           isSidebarMinimized={isSidebarMinimized}
           isMobile={isMobile}
-          onEditProfile={() => setIsEditModalOpen(true)}
         />
         <main className="mt-20 transition-all duration-300 ease-in-out p-6 relative">
           {children}
-
-          {/* EditUserModal */}
-          <EditUserModal
-            user={user}
-            isOpen={isEditModalOpen}
-            onClose={() => setIsEditModalOpen(false)}
-            onUpdate={handleUserUpdate}
-          />
 
           {/* Chatbot FAB */}
           <div className="fixed bottom-0 right-0 mb-20 mr-6 z-[9999] print:hidden">
@@ -79,8 +55,8 @@ const DashboardLayout = ({ children }) => {
                 w-14 h-14 flex items-center justify-center
                 bg-blue-600 text-white rounded-full shadow-lg 
                 hover:bg-blue-700 transition-all duration-300
-                animate-pulse-ring animate-bounce-subtle
-                hover:scale-110 hover:animate-none
+                animate-pulse-ring 
+                hover:scale-110
                 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2
               `}
             >
@@ -98,6 +74,14 @@ const DashboardLayout = ({ children }) => {
           )}
         </main>
       </div>
+
+      {/* Moved Sidebar after the main content */}
+      <Sidebar 
+        isOpen={isSidebarOpen} 
+        isMinimized={isSidebarMinimized}
+        isMobile={isMobile}
+        toggleSidebar={toggleSidebar}
+      />
     </div>
   );
 };

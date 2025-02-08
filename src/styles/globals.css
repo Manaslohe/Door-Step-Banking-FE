@@ -102,6 +102,24 @@
   }
 }
 
+/* Remove or comment out these animations if they exist */
+@keyframes gentle-bounce {
+  /* Delete or comment out this entire animation */
+}
+
+.animate-gentle-bounce {
+  /* Delete or comment out this class */
+}
+
+/* If there's any other bounce or pulse animation, remove or comment them out */
+@keyframes bounce {
+  /* Delete or comment out if exists */
+}
+
+.animate-bounce {
+  /* Delete or comment out if exists */
+}
+
 .slide-enter {
   animation: slideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }

@@ -113,6 +113,28 @@ module.exports = {
           '0%': { opacity: '0', transform: 'translateY(10px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        'gentle-pulse': {
+          '0%, 100%': {
+            transform: 'scale(1)',
+          },
+          '50%': {
+            transform: 'scale(1.02)', // Reduced from 1.05 to 1.02
+          },
+        },
+        'float-gentle': {
+          '0%, 100%': {
+            transform: 'translateY(0)',
+            boxShadow: '0 5px 15px 0 rgba(0,0,0,0.1)'
+          },
+          '50%': {
+            transform: 'translateY(-5px)',
+            boxShadow: '0 10px 20px 0 rgba(0,0,0,0.15)'
+          }
+        },
+        fadeIn: {
+          '0%': { opacity: '0', transform: 'scale(0.95)' },
+          '100%': { opacity: '1', transform: 'scale(1)' }
+        }
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -128,6 +150,9 @@ module.exports = {
         gradientFlow: 'gradientFlow 3s ease infinite',
         'fadeSlide': 'fadeSlide 0.5s ease-out',
         'bounce': 'bounce 1s infinite',
+        'none': 'none',
+        'gentle-pulse': 'gentle-pulse 4s ease-in-out infinite', // Increased duration from 3s to 4s
+        'float': 'float-gentle 3s ease-in-out infinite',
       },
       utilities: {
         '.animation-delay-300': {

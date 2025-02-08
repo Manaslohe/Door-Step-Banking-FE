@@ -173,24 +173,26 @@ const Dashboard = () => {
         </main>
       </div>
 
-      {/* Chat Button and Modal */}
-      <div className="fixed bottom-0 right-0 mb-20 mr-6 z-[9999] print:hidden">
+      {/* Chatbot Button */}
+      <div className="fixed bottom-0 right-0 mb-20 mr-6 z-30 print:hidden">
         <button
           onClick={() => setShowChat(!showChat)}
           className="w-14 h-14 flex items-center justify-center
             bg-blue-600 text-white rounded-full shadow-lg 
-            hover:bg-blue-700 transition-all duration-300
-            animate-pulse-ring animate-bounce-subtle
-            hover:scale-110 hover:animate-none
+            hover:bg-blue-700 transition-colors duration-300
+            hover:scale-105 animate-pulse-ring
             focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
         >
           <MessageSquare className="w-6 h-6" />
         </button>
       </div>
 
+      {/* Chatbot Modal */}
       {showChat && (
-        <div className="fixed bottom-24 right-6 z-50">
-          <Chatbot onClose={() => setShowChat(false)} />
+        <div className="fixed bottom-24 right-6 z-40">
+          <div className="w-[350px] max-w-[calc(100vw-48px)]">
+            <Chatbot onClose={() => setShowChat(false)} />
+          </div>
         </div>
       )}
     </div>

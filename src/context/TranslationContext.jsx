@@ -29,10 +29,10 @@ export const translations = {
     tryAgainLater: 'Please try again later',
 
     // Chatbot translations
-    chatbotGreeting: "Hi, I'm Nikita your Door Step Banking Assistant. How may I help you with banking services today?",
+    chatbotGreeting: "Hi, I'm Saral Bot, your Doorstep Banking Assistant. How may I help you with banking services today?",
     chatbotTyping: "Assistant is typing",
     chatbotPlaceholder: "Type your message here...",
-    chatbotTitle: "Banking Assistant",
+    chatbotTitle: "Saral Bot",
     chatbotError: "I'm sorry, I'm having trouble connecting right now. Please try again later.",
 
     // Sidebar translations
@@ -68,10 +68,10 @@ export const translations = {
     tryAgainLater: 'कृपया बाद में पुनः प्रयास करें',
 
     // Chatbot translations
-    chatbotGreeting: "नमस्ते, मैं निकिता हूं, आपकी डोर स्टेप बैंकिंग सहायक। आज मैं आपकी बैंकिंग सेवाओं में कैसे मदद कर सकती हूं?",
+    chatbotGreeting: "नमस्ते, मैं सरल बॉट हूं, आपका डोरस्टेप बैंकिंग सहायक। मैं आपकी कैसे मदद कर सकता हूं?",
     chatbotTyping: "सहायक टाइप कर रही है",
     chatbotPlaceholder: "अपना संदेश यहां टाइप करें...",
-    chatbotTitle: "बैंकिंग सहायक",
+    chatbotTitle: "सरल बॉट",
     chatbotError: "क्षमा करें, मैं अभी कनेक्ट होने में असमर्थ हूं। कृपया बाद में पुनः प्रयास करें।",
 
     // Sidebar translations

@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import axios from 'axios';
+import { auth } from '../../utils/auth';
+import { tokenManager } from '../../utils/tokenManager';
 import { 
   Eye, Edit, Save, X, Shield, User, Mail, Phone, 
   MapPin, Calendar, Clock, AlertCircle, CheckCircle, Lock
@@ -31,6 +34,11 @@ const formatDate = (dateString) => {
 };
 
 export const EditUserModal = ({ user, isOpen, onClose, onUpdate }) => {
+  // Add debug logging
+  useEffect(() => {
+    console.log('EditUserModal - Props:', { isOpen, user });
+  }, [isOpen, user]);
+
   const [isEditing, setIsEditing] = useState(false); // Add this state
   const [formData, setFormData] = useState({
     firstName: '',
@@ -42,6 +50,11 @@ export const EditUserModal = ({ user, isOpen, onClose, onUpdate }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
+
+  useEffect(() => {
+    // Debug log to check if modal is being triggered
+    console.log('EditUserModal mounted with props:', { isOpen, user });
+  }, [isOpen, user]);
 
   // Reset isEditing when modal is closed
   useEffect(() => {
@@ -386,33 +399,42 @@ export const EditUserModal = ({ user, isOpen, onClose, onUpdate }) => {
       </div>
     </form>
   );
-
   return (
-    <div className={`fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start sm:items-center justify-center z-[1000] overflow-y-auto p-0 sm:p-4 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'} transition-opacity`}>
-      <div className={`relative bg-white rounded-xl shadow-xl w-full h-full sm:h-auto sm:max-w-6xl sm:m-4 sm:max-h-[90vh] overflow-y-auto transform ${isOpen ? 'scale-100' : 'scale-95'} transition-transform`}>
-        <div className="sticky top-0 z-10 bg-white flex items-center justify-between p-2 sm:p-4 border-b border-gray-100">
-          <div className="flex items-center gap-2">
-            {isEditing ? (
-              <Edit className="w-5 h-5 text-blue-600" />
-            ) : (
-              <Eye className="w-5 h-5 text-blue-600" />
-            )}
-            <h2 className="text-lg font-semibold text-gray-900">
-              {isEditing ? 'Edit Personal Information' : 'Personal Information'}
-            </h2>
+    <>
+      {isOpen && (
+        <div className="fixed inset-0 z-[100] overflow-y-auto">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}></div>
+          <div className="fixed inset-0 flex items-center justify-center p-4">
+            <div className={`relative bg-white rounded-xl shadow-xl w-full 
+              max-w-6xl max-h-[85vh] overflow-y-auto transform 
+              ${isOpen ? 'scale-100' : 'scale-95'} transition-transform duration-200`}
+            >
+              <div className="sticky top-0 z-10 bg-white flex items-center justify-between p-2 sm:p-4 border-b border-gray-100">
+                <div className="flex items-center gap-2">
+                  {isEditing ? (
+                    <Edit className="w-5 h-5 text-blue-600" />
+                  ) : (
+                    <Eye className="w-5 h-5 text-blue-600" />
+                  )}
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    {isEditing ? 'Edit Personal Information' : 'Personal Information'}
+                  </h2>
+                </div>
+                <button 
+                  onClick={onClose}
+                  className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+              
+              <div className="p-2 sm:p-6">
+                {isEditing ? renderEditMode() : renderViewMode()}
+              </div>
+            </div>
           </div>
-          <button 
-            onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
         </div>
-        
-        <div className="p-2 sm:p-6">
-          {isEditing ? renderEditMode() : renderViewMode()}
-        </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 };
