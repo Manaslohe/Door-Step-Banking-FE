@@ -298,7 +298,7 @@ const ServiceDetails = ({ serviceId, onClose, onUpdate }) => {
                         <DetailItem icon={User} label="Service Type" value={service.serviceType || 'N/A'} />
                         <DetailItem icon={IndianRupee} label="Amount" value={formatCurrency(service.amount)} />
                         <DetailItem icon={Calendar} label="Requested Date" value={formatDate(service.createdAt)} />
-                        <DetailItem icon={Clock} label="Preferred Time" value={service.preferredTime || 'N/A'} />
+                        <DetailItem icon={Clock} label="Time Slot" value={service.timeSlot || 'N/A'} />
                       </div>
                     </div>
 
