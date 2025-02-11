@@ -40,7 +40,7 @@ const Sidebar = ({ isOpen, isMinimized, isMobile, toggleSidebar }) => {
             ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}
           `}
           onClick={toggleSidebar}
-          style={{ zIndex: 40 }}
+          style={{ zIndex: isMobile ? 40 : 20 }}
         />
       )}
 
@@ -51,9 +51,10 @@ const Sidebar = ({ isOpen, isMinimized, isMobile, toggleSidebar }) => {
           ${isMobile ? 'w-[280px]' : (isMinimized ? 'w-24' : 'w-72')}
           bg-gradient-to-b from-blue-700 via-blue-600 to-blue-800
           border-r border-blue-500/30 shadow-xl
-          transform transition-all duration-300 ease-in-out z-40
+          transform transition-all duration-300 ease-in-out
           ${isMobile ? (isOpen ? 'translate-x-0' : '-translate-x-full') : ''}
         `}
+        style={{ zIndex: isMobile ? 50 : 30 }}
       >
         <div className="p-4 h-full flex flex-col relative">
           {/* Header */}
