@@ -53,7 +53,6 @@ export const translations = {
     bankName: 'Saral Bank',
     welcomeBack: 'Welcome back to',
     trustedPartner: 'Your trusted financial partner for seamless banking',
-    exploreServices: 'Explore Our Services',
 
     // Dashboard Stats Cards
     stats: {
@@ -148,7 +147,6 @@ export const translations = {
     bankName: 'सरल बैंक',
     welcomeBack: 'में आपका स्वागत है',
     trustedPartner: 'आपका विश्वसनीय वित्तीय साथी सरल बैंकिंग के लिए',
-    exploreServices: 'सेवाएं देखें',
 
     // Dashboard Stats Cards
     stats: {
