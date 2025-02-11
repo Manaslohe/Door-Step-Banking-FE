@@ -7,9 +7,10 @@ import {
   Lock, 
   LogIn, 
   Loader2, 
-  AlertCircle 
+  AlertCircle,
+  CheckCircle 
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const AdminLogin = ({ onClose }) => {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ const AdminLogin = ({ onClose }) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -45,12 +47,12 @@ const AdminLogin = ({ onClose }) => {
         userType: 'admin' // Ensure userType is set
       }));
 
-      if (response.ok) {
-        // Add small delay before navigation
-        setTimeout(() => {
-          navigate('/admin/dashboard', { replace: true });
-        }, 1000);
-      }
+      setSuccess(true); // Show success message
+      
+      // Add delay before navigation
+      setTimeout(() => {
+        navigate('/admin/dashboard', { replace: true });
+      }, 2000);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -71,6 +73,20 @@ const AdminLogin = ({ onClose }) => {
         <h2 className="text-3xl font-bold text-gray-800">Welcome, Banker</h2>
         <p className="text-gray-600 mt-2">Access your administrative dashboard</p>
       </div>
+
+      <AnimatePresence>
+        {success && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="mb-6 p-4 rounded-lg bg-green-50 border border-green-200 flex items-center"
+          >
+            <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+            <p className="text-green-600">Login successful! Redirecting to dashboard...</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {error && (
         <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 flex items-start">

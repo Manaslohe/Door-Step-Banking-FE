@@ -7,6 +7,7 @@ import {
   Loader2
 } from 'lucide-react';
 import Sidebar from './Sidebar';
+import { fetchWithAdminAuth } from '../../utils/adminApi';
 
 const ManageAgents = () => {
   const navigate = useNavigate();
@@ -23,13 +24,34 @@ const ManageAgents = () => {
   });
 
   useEffect(() => {
-    // Check for admin token before fetching
-    const adminToken = localStorage.getItem('adminToken');
-    if (!adminToken) {
-      navigate('/admin/login');
-      return;
-    }
-    fetchAgents();
+    const checkAdminAuth = async () => {
+      try {
+        const adminToken = localStorage.getItem('adminToken');
+        if (!adminToken) {
+          navigate('/admin/login');
+          return;
+        }
+
+        // Verify token validity by making a test request
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/verify`, {
+          headers: {
+            'Authorization': `Bearer ${adminToken}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Invalid token');
+        }
+
+        fetchAgents();
+      } catch (err) {
+        console.error('Auth check failed:', err);
+        localStorage.removeItem('adminToken');
+        navigate('/admin/login');
+      }
+    };
+
+    checkAdminAuth();
   }, [navigate]);
 
   const fetchAgents = async () => {
@@ -40,7 +62,6 @@ const ManageAgents = () => {
         return;
       }
 
-      console.log('Fetching agents with token:', adminToken);
       const response = await fetch(`${import.meta.env.VITE_API_URL}/users?userType=agent`, {
         headers: {
           'Authorization': `Bearer ${adminToken}`,
@@ -48,21 +69,10 @@ const ManageAgents = () => {
         }
       });
 
-      // Handle different response statuses
       if (response.status === 401) {
         localStorage.removeItem('adminToken');
         navigate('/admin/login');
         return;
-      }
-
-      if (response.status === 403) {
-        setError('Access denied. Admin privileges required.');
-        return;
-      }
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to fetch agents');
       }
 
       const data = await response.json();
@@ -83,12 +93,6 @@ const ManageAgents = () => {
     setLoading(true);
     setError('');
 
-    const adminToken = localStorage.getItem('adminToken');
-    if (!adminToken) {
-      navigate('/admin/login');
-      return;
-    }
-
     try {
       const agentData = {
         ...newAgent,
@@ -98,20 +102,10 @@ const ManageAgents = () => {
         isActive: true
       };
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/users/register`, {
+      await fetchWithAdminAuth('/users/register', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-        },
         body: JSON.stringify(agentData)
       });
-
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to add agent');
-      }
 
       await fetchAgents();
       setShowAddModal(false);
@@ -125,22 +119,12 @@ const ManageAgents = () => {
   };
 
   const handleRemoveAgent = async (agentId) => {
-    const adminToken = localStorage.getItem('adminToken');
-    if (!adminToken) {
-      navigate('/admin/login');
-      return;
-    }
-
     if (!window.confirm('Are you sure you want to remove this agent?')) return;
     
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/user/${agentId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-        }
+      await fetchWithAdminAuth(`/users/${agentId}`, {
+        method: 'DELETE'
       });
-      if (!response.ok) throw new Error('Failed to remove agent');
       await fetchAgents();
     } catch (err) {
       setError('Failed to remove agent');

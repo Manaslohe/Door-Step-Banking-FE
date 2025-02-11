@@ -1,16 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  TrendingUp,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  Loader2,
-  IndianRupee
+  Filter, Calendar, AlertCircle, IndianRupee, XCircle
 } from 'lucide-react';
 import ServiceDetails from './ServiceDetails';
 import Sidebar from './Sidebar';
-import StatusIndicator from '../Common/StatusIndicator';
+import LoadingSpinner from '../ui/LoadingSpinner';
+import ServiceCard from './ServiceCard';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -18,6 +14,13 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedService, setSelectedService] = useState(null);
+  const [filters, setFilters] = useState({
+    status: 'all',
+    dateRange: 'all',
+    amountRange: 'all'
+  });
+  const [filteredServices, setFilteredServices] = useState([]);
+  const [activeFilterCount, setActiveFilterCount] = useState(0);
 
   useEffect(() => {
     const adminToken = localStorage.getItem('adminToken');
@@ -27,6 +30,10 @@ const AdminDashboard = () => {
     }
     fetchServices();
   }, [navigate]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [filters, services]);
 
   const fetchServices = async () => {
     try {
@@ -41,12 +48,57 @@ const AdminDashboard = () => {
     }
   };
 
-  // Updated dashboard stats calculation with safety checks
-  const dashboardStats = {
-    totalServices: services?.length || 0,
-    pendingServices: services?.filter(s => s.status === 'pending')?.length || 0,
-    completedServices: services?.filter(s => s.status === 'completed')?.length || 0,
-    totalAmount: services?.reduce((sum, service) => sum + (Number(service?.amount) || 0), 0) || 0
+  const applyFilters = () => {
+    let result = [...services];
+    let filterCount = 0;
+
+    // Status filter
+    if (filters.status !== 'all') {
+      result = result.filter(service => service.status === filters.status);
+      filterCount++;
+    }
+
+    // Date range filter
+    if (filters.dateRange !== 'all') {
+      const now = new Date();
+      
+      switch (filters.dateRange) {
+        case 'today':
+          result = result.filter(service => 
+            new Date(service.createdAt).toDateString() === now.toDateString()
+          );
+          break;
+        case 'week':
+          const weekAgo = new Date(now.setDate(now.getDate() - 7));
+          result = result.filter(service => 
+            new Date(service.createdAt) >= weekAgo
+          );
+          break;
+        case 'month':
+          const monthAgo = new Date(now.setMonth(now.getMonth() - 1));
+          result = result.filter(service => 
+            new Date(service.createdAt) >= monthAgo
+          );
+          break;
+      }
+      filterCount++;
+    }
+
+    // Amount range filter
+    if (filters.amountRange !== 'all') {
+      const [min, max] = filters.amountRange.split('-').map(Number);
+      result = result.filter(service => {
+        const amount = Number(service.amount);
+        if (max) {
+          return amount >= min && amount <= max;
+        }
+        return amount >= min;
+      });
+      filterCount++;
+    }
+
+    setActiveFilterCount(filterCount);
+    setFilteredServices(result);
   };
 
   const handleLogout = () => {
@@ -59,160 +111,176 @@ const AdminDashboard = () => {
     if (path) navigate(path);
   };
 
-  // Updated card rendering with safe value formatting
-  const formatValue = (value) => {
-    if (typeof value === 'number') {
-      return value.toLocaleString('en-IN');
-    }
-    if (typeof value === 'string') {
-      return value;
-    }
-    return '0';
-  };
-
-  const formatCurrency = (amount) => {
-    return `₹${formatValue(amount)}`;
-  };
-
   const handleServiceClick = (serviceId) => {
     setSelectedService(serviceId);
   };
 
-  // Add refresh function to update services after status change
   const refreshServices = () => {
     fetchServices();
   };
+
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+  };
+
+  const FilterBadge = ({ count }) => count > 0 ? (
+    <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-600 rounded-full">
+      {count} active
+    </span>
+  ) : null;
+
+  const headerSection = (
+    <header className="bg-blue-600">
+      <div className="mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-white">Dashboard Overview</h1>
+        </div>
+      </div>
+    </header>
+  );
+
+  const filterSection = (
+    <div className="bg-white rounded-xl shadow-sm mb-6">
+      <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <Filter className="w-5 h-5 text-gray-500" />
+          <h3 className="font-semibold text-gray-800">Filters</h3>
+          <FilterBadge count={activeFilterCount} />
+        </div>
+        {activeFilterCount > 0 && (
+          <button
+            onClick={() => setFilters({
+              status: 'all',
+              dateRange: 'all',
+              amountRange: 'all'
+            })}
+            className="text-sm text-gray-500 hover:text-red-500 flex items-center space-x-1"
+          >
+            <XCircle className="w-4 h-4" />
+            <span>Clear all</span>
+          </button>
+        )}
+      </div>
+      
+      <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Status Filter */}
+        <div className="space-y-1">
+          <label className="text-sm font-medium text-gray-700 flex items-center space-x-2">
+            <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+            <span>Status</span>
+          </label>
+          <select
+            value={filters.status}
+            onChange={(e) => handleFilterChange('status', e.target.value)}
+            className="w-full rounded-lg border-gray-300 bg-gray-50 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          >
+            <option value="all">All Status</option>
+            <option value="ASSIGNED">Assigned</option>
+            <option value="APPROVAL_PENDING">Approval Pending</option>
+            <option value="APPROVED">Approved</option>
+            <option value="REJECTED">Rejected</option>
+            <option value="COMPLETED">Completed</option>
+          </select>
+        </div>
+
+        {/* Date Range Filter */}
+        <div className="space-y-1">
+          <label className="text-sm font-medium text-gray-700 flex items-center space-x-2">
+            <div className="w-2 h-2 rounded-full bg-green-500"></div>
+            <span>Time Period</span>
+          </label>
+          <select
+            value={filters.dateRange}
+            onChange={(e) => handleFilterChange('dateRange', e.target.value)}
+            className="w-full rounded-lg border-gray-300 bg-gray-50 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          >
+            <option value="all">All Time</option>
+            <option value="today">Today</option>
+            <option value="week">Last 7 Days</option>
+            <option value="month">Last 30 Days</option>
+          </select>
+        </div>
+
+        {/* Amount Range Filter */}
+        <div className="space-y-1">
+          <label className="text-sm font-medium text-gray-700 flex items-center space-x-2">
+            <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+            <span>Price Range</span>
+          </label>
+          <select
+            value={filters.amountRange}
+            onChange={(e) => handleFilterChange('amountRange', e.target.value)}
+            className="w-full rounded-lg border-gray-300 bg-gray-50 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          >
+            <option value="all">All Amounts</option>
+            <option value="0-500">Under ₹500</option>
+            <option value="500-2000">₹500 - ₹2,000</option>
+            <option value="2000-5000">₹2,000 - ₹5,000</option>
+            <option value="5000-10000">₹5,000 - ₹10,000</option>
+            <option value="10000-999999">Above ₹10,000</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="h-screen bg-gray-50 flex overflow-hidden">
       <Sidebar />
       
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col p-6 overflow-hidden">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6">Dashboard Overview</h1>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {headerSection}
 
-        {error && (
-          <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 flex items-start">
-            <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 mr-2" />
-            <p className="text-red-600">{error}</p>
-          </div>
-        )}
-
-        {/* Statistics Cards - Reduced padding and margins */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-          {[
-            { 
-              title: 'Total Services',
-              value: dashboardStats.totalServices,
-              icon: TrendingUp,
-              color: 'blue',
-              growth: '+12.5%',
-              format: formatValue
-            },
-            { 
-              title: 'Pending Services',
-              value: dashboardStats.pendingServices,
-              icon: Clock,
-              color: 'yellow',
-              growth: '+5.2%',
-              format: formatValue
-            },
-            { 
-              title: 'Completed Services',
-              value: dashboardStats.completedServices,
-              icon: CheckCircle,
-              color: 'green',
-              growth: '+8.4%',
-              format: formatValue
-            },
-            { 
-              title: 'Total Revenue',
-              value: dashboardStats.totalAmount,
-              icon: IndianRupee,
-              color: 'orange',
-              growth: '+15.3%',
-              format: formatCurrency
-            }
-          ].map((stat, index) => (
-            <div
-              key={index}
-              className={`bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border-l-4 border-${stat.color}-500 group`}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">{stat.title}</p>
-                  <h3 className="text-xl font-bold text-gray-800">
-                    {loading ? (
-                      <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-                    ) : (
-                      stat.format(stat.value)
-                    )}
-                  </h3>
-                </div>
-                <div className={`p-2 rounded-full bg-${stat.color}-50 group-hover:bg-${stat.color}-100 transition-colors duration-300`}>
-                  <stat.icon className={`w-5 h-5 text-${stat.color}-500`} />
-                </div>
-              </div>
-              <div className="mt-2 flex items-center text-xs">
-                <span className="text-green-500 font-medium">{stat.growth}</span>
-                <span className="text-gray-400 ml-2">vs last month</span>
-              </div>
+        <main className="flex-1 overflow-y-auto p-6">
+          {error && (
+            <div className="mb-4 p-4 rounded-lg bg-red-50 border border-red-200 flex items-start">
+              <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 mr-2" />
+              <p className="text-red-600">{error}</p>
             </div>
-          ))}
-        </div>
+          )}
 
-        {/* Services Table with Fixed Height and Scroll */}
-        <div className="flex-1 flex flex-col min-h-0">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Recent Services</h2>
-          <div className="flex-1 bg-white rounded-xl shadow-sm overflow-hidden flex flex-col">
-            <div className="overflow-x-auto flex-1">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50 sticky top-0">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Service Type</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">User Phone</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200 overflow-y-auto">
-                  {services.map((service, index) => (
-                    <tr 
-                      key={index} 
-                      onClick={() => handleServiceClick(service._id)}
-                      className="hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {service.serviceType}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {service.userPhone}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <StatusIndicator status={service.status} />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        ₹{(service.amount || 0).toLocaleString('en-IN')}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(service.createdAt).toLocaleDateString()}
-                      </td>
+          {filterSection}
+
+          {/* Services Table */}
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-800">Recent Services</h2>
+            </div>
+            {loading ? (
+              <LoadingSpinner />
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Service Details</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">User Info</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredServices.map((service) => (
+                      <ServiceCard
+                        key={service._id}
+                        service={service}
+                        onClick={handleServiceClick}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
-        </div>
+        </main>
       </div>
 
-      {/* Add ServiceDetails Modal */}
       {selectedService && (
         <ServiceDetails 
           serviceId={selectedService}
           onClose={() => setSelectedService(null)}
-          onUpdate={refreshServices} // Add this prop to refresh services after updates
+          onUpdate={refreshServices}
         />
       )}
     </div>

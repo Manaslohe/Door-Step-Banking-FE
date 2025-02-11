@@ -1,22 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { X, ArrowLeft, CheckCircle, XCircle, UserPlus, AlertCircle, Clock, IndianRupee, Calendar, Phone, User, Loader2 } from 'lucide-react';
+import { X, ArrowLeft, CheckCircle, XCircle, UserPlus, AlertCircle, Clock, IndianRupee, Calendar, Phone, User, Loader2, MapPin, FileText } from 'lucide-react';
+import AssignAgentModal from './AssignAgentModal';
+import Toast from '../common/Toast';
 
 const ServiceDetails = ({ serviceId, onClose, onUpdate }) => {
   const [service, setService] = useState(null);
-  const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showAgentModal, setShowAgentModal] = useState(false);
-  const [selectedAgent, setSelectedAgent] = useState(null);
   const [updateSuccess, setUpdateSuccess] = useState('');
   const [assignmentSuccess, setAssignmentSuccess] = useState('');
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   const fetchServiceDetails = async () => {
     try {
       setLoading(true);
+      const adminToken = localStorage.getItem('adminToken');
+      
       const response = await fetch(`${import.meta.env.VITE_API_URL}/services/${serviceId}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+          'Authorization': `Bearer ${adminToken}`,
           'Accept': 'application/json'
         }
       });
@@ -40,7 +44,6 @@ const ServiceDetails = ({ serviceId, onClose, onUpdate }) => {
   useEffect(() => {
     if (serviceId) {
       fetchServiceDetails();
-      fetchAgents();
     }
 
     return () => {
@@ -51,38 +54,12 @@ const ServiceDetails = ({ serviceId, onClose, onUpdate }) => {
     };
   }, [serviceId]);
 
-  const fetchAgents = async () => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/users?userType=agent`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
-          'Accept': 'application/json'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch agents');
-      }
-      
-      const data = await response.json();
-      console.log('Fetched agents:', data);
-      
-      if (data.success && Array.isArray(data.users)) {
-        setAgents(data.users.filter(user => user.userType === 'agent' && user.isActive));
-      } else {
-        throw new Error('Invalid agents data format');
-      }
-    } catch (err) {
-      console.error('Error fetching agents:', err);
-      setError('Failed to fetch agents: ' + err.message);
-    }
-  };
-
   const handleStatusUpdate = async (status) => {
     try {
       setLoading(true);
       setError('');
       
+      const adminToken = localStorage.getItem('adminToken');
       const adminUser = JSON.parse(localStorage.getItem('adminUser'));
       console.log('Sending status update:', { status, adminName: adminUser?.name });
 
@@ -90,7 +67,7 @@ const ServiceDetails = ({ serviceId, onClose, onUpdate }) => {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+          'Authorization': `Bearer ${adminToken}`,
           'Accept': 'application/json'
         },
         body: JSON.stringify({ 
@@ -112,7 +89,9 @@ const ServiceDetails = ({ serviceId, onClose, onUpdate }) => {
       }
       
       setService(data.service);
-      setUpdateSuccess(`Service status updated to ${status}`);
+      setToastMessage(`Service status updated to ${status}`);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
       if (onUpdate) onUpdate(data.service);
       
       if (status === 'APPROVED') {
@@ -126,52 +105,10 @@ const ServiceDetails = ({ serviceId, onClose, onUpdate }) => {
     }
   };
 
-  const handleAgentAssignment = async () => {
-    if (!selectedAgent) {
-      setError('Please select an agent');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError('');
-
-      const adminUser = JSON.parse(localStorage.getItem('adminUser'));
-      
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/services/${serviceId}/assign`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          agentId: selectedAgent,
-          adminName: adminUser?.name || 'Admin'
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to assign agent');
-      }
-
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.message || 'Failed to assign agent');
-      }
-
-      // Refresh service details
-      await fetchServiceDetails();
-      setShowAgentModal(false);
-      setAssignmentSuccess('Agent assigned successfully');
-    } catch (err) {
-      console.error('Agent assignment error:', err);
-      setError(err.message || 'Failed to assign agent');
-    } finally {
-      setLoading(false);
-    }
+  const handleAssignmentSuccess = async () => {
+    await fetchServiceDetails();
+    setShowAgentModal(false);
+    setAssignmentSuccess('Agent assigned successfully');
   };
 
   const formatCurrency = (amount) => {
@@ -274,232 +211,254 @@ const ServiceDetails = ({ serviceId, onClose, onUpdate }) => {
   const renderActionButtons = () => {
     if (!service) return null;
 
-    // Show approve/reject buttons only for pending services
-    if (service.status?.toLowerCase() === 'pending') {
+    // Changed from lowercase to uppercase comparison
+    if (service.status === 'APPROVAL_PENDING') {
       return (
-        <div className="flex justify-end space-x-4 mt-6 border-t pt-6">
+        <div className="flex space-x-3">
           <button
-            onClick={() => handleStatusUpdate('rejected')}
-            disabled={loading}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+            onClick={() => handleStatusUpdate('REJECTED')}
+            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 
+                     transition-colors flex items-center justify-center space-x-2"
           >
             <XCircle className="w-5 h-5" />
-            <span>Reject Request</span>
+            <span>Reject</span>
           </button>
           <button
-            onClick={() => handleStatusUpdate('approved')}
-            disabled={loading}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+            onClick={() => handleStatusUpdate('APPROVED')}
+            className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 
+                     transition-colors flex items-center justify-center space-x-2"
           >
             <CheckCircle className="w-5 h-5" />
-            <span>Approve Request</span>
+            <span>Approve</span>
           </button>
         </div>
       );
     }
 
-    // Show assign agent button for approved services without an assigned agent
-    if (service.status?.toLowerCase() === 'approved' && !service.assignedAgent) {
+    if (service.status === 'APPROVED' && !service.assignedAgent) {
       return (
-        <div className="flex justify-end mt-6 border-t pt-6">
-          <button
-            onClick={() => setShowAgentModal(true)}
-            disabled={loading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-          >
-            <UserPlus className="w-5 h-5" />
-            <span>Assign Agent</span>
-          </button>
-        </div>
+        <button
+          onClick={() => setShowAgentModal(true)}
+          className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                   transition-colors flex items-center justify-center space-x-2"
+        >
+          <UserPlus className="w-5 h-5" />
+          <span>Assign Agent</span>
+        </button>
       );
     }
 
     return null;
   };
 
-  const renderAgentCard = (agent) => (
-    <label
-      key={agent._id}
-      className={`flex items-center justify-between p-4 rounded-lg cursor-pointer border transition-colors ${
-        selectedAgent === agent._id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-200'
-      }`}
-    >
-      <input
-        type="radio"
-        name="agent"
-        value={agent._id}
-        checked={selectedAgent === agent._id}
-        onChange={(e) => setSelectedAgent(e.target.value)}
-        className="hidden"
-      />
-      <div className="flex-1">
-        <p className="font-medium">{agent.name}</p>
-        <p className="text-sm text-gray-500">{agent.phone}</p>
-        <p className="text-xs text-gray-400">{agent.userId}</p>
-      </div>
-      <div className="flex items-center">
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-          agent.activeAssignments > 5 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
-        }`}>
-          {agent.activeAssignments || 0} active tasks
-        </span>
-      </div>
-    </label>
-  );
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-white px-6 py-4 border-b flex items-center justify-between">
-          <div className="flex items-center space-x-3">
+    <>
+      <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 animate-fade-in">
+        <div className="bg-white rounded-xl shadow-xl w-[80vw] max-w-6xl max-h-[85vh] flex flex-col animate-scale-up">
+          {/* Header */}
+          <div className="px-6 py-4 border-b flex items-center justify-between bg-gray-50 rounded-t-xl">
+            <div className="flex items-center space-x-4">
+              <button 
+                onClick={onClose}
+                className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5 text-gray-600" />
+              </button>
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">Service Request #{serviceId?.slice(-6)}</h2>
+                <p className="text-sm text-gray-500">Created on {service && formatDate(service.createdAt)}</p>
+              </div>
+            </div>
             <button 
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
             >
-              <ArrowLeft className="w-6 h-6 text-gray-400" />
+              <X className="w-5 h-5 text-gray-600" />
             </button>
-            <h2 className="text-xl font-bold text-gray-800">Service Request Details</h2>
           </div>
-          <button 
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <X className="w-6 h-6 text-gray-500" />
-          </button>
-        </div>
 
-        {/* Content */}
-        <div className="p-6">
-          {/* Notifications */}
-          {(error || updateSuccess || assignmentSuccess) && (
-            <div className={`mb-6 p-4 rounded-lg ${
-              error ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'
-            } flex items-start`}>
-              <AlertCircle className={`w-5 h-5 ${error ? 'text-red-600' : 'text-green-600'} mt-0.5 mr-2 flex-shrink-0`} />
-              <p className={error ? 'text-red-600' : 'text-green-600'}>
-                {error || updateSuccess || assignmentSuccess}
-              </p>
-            </div>
-          )}
-
-          {loading ? (
-            <div className="flex justify-center items-center h-64">
-              <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-            </div>
-          ) : service ? (
-            <div className="space-y-6">
-              {renderStatusWithActions()}
-              {/* Service Details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <DetailItem icon={Calendar} label="Request Date" value={formatDate(service.createdAt)} />
-                  <DetailItem icon={User} label="Customer Name" value={service.userName || 'N/A'} />
-                  <DetailItem icon={Phone} label="Contact Number" value={service.userPhone || 'N/A'} />
-                  <DetailItem icon={IndianRupee} label="Service Amount" value={formatCurrency(service.amount)} />
-                  <div className="flex items-center space-x-2">
-                    <Clock className="w-5 h-5 text-gray-400" />
-                    <span className="text-gray-600">Status:</span>
-                    {renderStatusBadge(service.status)}
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <DetailItem icon={User} label="Service Type" value={service.serviceType || 'N/A'} />
-                  {service.description && (
-                    <div className="space-y-2">
-                      <h3 className="font-medium text-gray-700">Description</h3>
-                      <p className="text-gray-600">{service.description}</p>
-                    </div>
-                  )}
+          {/* Main Content */}
+          <div className="flex-1 flex overflow-hidden">
+            {loading ? (
+              <div className="flex-1 flex justify-center items-center">
+                <div className="flex flex-col items-center space-y-2">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                  <p className="text-sm text-gray-500">Loading details...</p>
                 </div>
               </div>
+            ) : service ? (
+              <>
+                {/* Left Section - Service Info */}
+                <div className="w-2/3 p-6 overflow-y-auto">
+                  {/* Service Details Grid */}
+                  <div className="grid gap-6">
+                    <div className="bg-white p-5 rounded-xl border shadow-sm">
+                      <h3 className="text-lg font-semibold text-gray-800 mb-4">Service Information</h3>
+                      <div className="grid grid-cols-2 gap-6">
+                        <DetailItem icon={User} label="Service Type" value={service.serviceType || 'N/A'} />
+                        <DetailItem icon={IndianRupee} label="Amount" value={formatCurrency(service.amount)} />
+                        <DetailItem icon={Calendar} label="Requested Date" value={formatDate(service.createdAt)} />
+                        <DetailItem icon={Clock} label="Preferred Time" value={service.preferredTime || 'N/A'} />
+                      </div>
+                    </div>
 
-              {/* Assigned Agent Information */}
-              {service.assignedAgent && (
-                <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
-                  <h3 className="font-medium text-blue-800 mb-2">Assigned Agent</h3>
-                  <div className="flex items-center space-x-4">
-                    <User className="w-5 h-5 text-blue-600" />
-                    <div>
-                      <p className="font-medium">{service.assignedAgent.name}</p>
-                      <p className="text-sm text-blue-600">{service.assignedAgent.phone}</p>
+                    {/* Customer Details & Description sections with similar styling */}
+                    <div className="bg-white p-5 rounded-xl border shadow-sm">
+                      <h3 className="text-lg font-semibold text-gray-800 mb-4">Customer Details</h3>
+                      <div className="space-y-3">
+                        <DetailItem icon={User} label="Name" value={service.userName || 'N/A'} />
+                        <DetailItem icon={Phone} label="Phone" value={service.userPhone || 'N/A'} />
+                        <DetailItem icon={MapPin} label="Address" value={service.address || 'N/A'} />
+                      </div>
+                    </div>
+
+                    <div className="bg-white p-5 rounded-xl border shadow-sm">
+                      <h3 className="text-lg font-semibold text-gray-800 mb-4">Description</h3>
+                      <div className="flex items-start space-x-2">
+                        <FileText className="w-5 h-5 text-gray-400 flex-shrink-0 mt-1" />
+                        <p className="text-gray-600">{service.description || 'No description provided'}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
-              )}
 
-              {/* Action Buttons */}
-              {renderActionButtons()}
-            </div>
-          ) : (
-            <div className="text-center text-gray-500">No service details found</div>
-          )}
+                {/* Right Section - Status & Actions */}
+                <div className="w-1/3 bg-gray-50 p-6 overflow-y-auto border-l">
+                  {/* Status section with improved styling */}
+                  <div className="space-y-6">
+                    <div className="bg-white p-5 rounded-xl shadow-sm">
+                      <h3 className="text-lg font-semibold text-gray-800 mb-4">Current Status</h3>
+                      <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className={`w-3 h-3 rounded-full ${
+                              service.status === 'APPROVED' ? 'bg-green-500' :
+                              service.status === 'REJECTED' ? 'bg-red-500' :
+                              service.status === 'ASSIGNED' ? 'bg-blue-500' :
+                              service.status === 'COMPLETED' ? 'bg-purple-500' :
+                              'bg-yellow-500'
+                            }`} />
+                            <span className="font-medium text-gray-900">
+                              {service.status?.replace('_', ' ')}
+                            </span>
+                          </div>
+                          <Clock className="w-5 h-5 text-gray-400" />
+                        </div>
+                        <div className="mt-2 text-sm text-gray-500">
+                          Last updated: {new Date(service.updatedAt).toLocaleString()}
+                        </div>
+                      </div>
+                      
+                      {/* Action Buttons */}
+                      {service.status === 'APPROVAL_PENDING' && (
+                        <div className="mt-6 grid grid-cols-2 gap-3">
+                          <button
+                            onClick={() => handleStatusUpdate('REJECTED')}
+                            className="px-4 py-2.5 bg-white border-2 border-red-500 text-red-600 rounded-lg
+                                     hover:bg-red-50 transition-colors flex items-center justify-center space-x-2
+                                     font-medium focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                          >
+                            <XCircle className="w-5 h-5" />
+                            <span>Reject</span>
+                          </button>
+                          <button
+                            onClick={() => handleStatusUpdate('APPROVED')}
+                            className="px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700
+                                     transition-colors flex items-center justify-center space-x-2
+                                     font-medium focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                          >
+                            <CheckCircle className="w-5 h-5" />
+                            <span>Approve</span>
+                          </button>
+                        </div>
+                      )}
+
+                      {service.status === 'APPROVED' && !service.assignedAgent && (
+                        <button
+                          onClick={() => setShowAgentModal(true)}
+                          className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg
+                                   hover:bg-blue-700 transition-colors flex items-center justify-center
+                                   space-x-2 font-medium focus:outline-none focus:ring-2
+                                   focus:ring-blue-500 focus:ring-offset-2"
+                        >
+                          <UserPlus className="w-5 h-5" />
+                          <span>Assign Agent</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Assigned Agent & Status History sections */}
+                    {service.assignedAgent && (
+                      <div className="bg-white rounded-xl shadow-sm">
+                        <h3 className="text-lg font-semibold text-gray-800">Assigned Agent</h3>
+                        <div className="flex items-center space-x-4 p-3 bg-blue-50 rounded-lg">
+                          <div className="w-12 h-12 bg-blue-200 rounded-full flex items-center justify-center">
+                            <User className="w-6 h-6 text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-blue-900">{service.assignedAgent.name}</p>
+                            <p className="text-sm text-blue-600">{service.assignedAgent.phone}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="bg-white p-5 rounded-xl shadow-sm">
+                      <h3 className="text-lg font-semibold text-gray-800 mb-4">Status History</h3>
+                      <div className="space-y-4">
+                        {service.statusHistory?.map((history, index) => (
+                          <div key={index} className="flex items-start space-x-3">
+                            <div className={`w-2 h-2 mt-2 rounded-full ${getStatusColor(history.status)}`} />
+                            <div className="flex-1">
+                              <p className="font-medium text-gray-800">{history.status?.replace('_', ' ')}</p>
+                              <p className="text-sm text-gray-500">
+                                {new Date(history.timestamp).toLocaleString()}
+                              </p>
+                              <p className="text-sm text-gray-600">by {history.updatedBy.name}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="flex-1 flex justify-center items-center text-gray-500">
+                No service details found
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Agent Assignment Modal */}
-      {showAgentModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-60">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full">
-            <div className="flex justify-between items-center mb-4">
-              <div>
-                <h2 className="text-xl font-bold">Assign Agent</h2>
-                <p className="text-sm text-gray-500 mt-1">Select an agent to handle this request</p>
-              </div>
-              <button onClick={() => setShowAgentModal(false)} className="p-2 hover:bg-gray-100 rounded-full">
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
-                {error}
-              </div>
-            )}
-
-            <div className="space-y-4 max-h-[60vh] overflow-y-auto">
-              {loading ? (
-                <div className="flex justify-center py-8">
-                  <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-                </div>
-              ) : agents.length > 0 ? (
-                <div className="grid gap-3">
-                  {agents.map(renderAgentCard)}
-                </div>
-              ) : (
-                <p className="text-center text-gray-500 py-4">No active agents available</p>
-              )}
-            </div>
-
-            <div className="flex justify-end space-x-3 mt-6 pt-4 border-t">
-              <button
-                onClick={() => setShowAgentModal(false)}
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAgentAssignment}
-                disabled={!selectedAgent || loading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Assigning...' : 'Assign Agent'}
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Toast Notification */}
+      {showToast && (
+        <Toast
+          message={toastMessage}
+          type="success"
+          onClose={() => setShowToast(false)}
+        />
       )}
-    </div>
+
+      {/* Simplified Agent Assignment Modal */}
+      {showAgentModal && (
+        <AssignAgentModal
+          serviceId={serviceId}
+          onClose={() => setShowAgentModal(false)}
+          onAssignmentSuccess={handleAssignmentSuccess}
+        />
+      )}
+    </>
   );
 };
 
 const DetailItem = ({ icon: Icon, label, value }) => (
-    <div className="flex items-center space-x-2">
-      <Icon className="w-5 h-5 text-gray-400 flex-shrink-0" />
-      <span className="text-gray-600">{label}:</span>
-      <span className="font-medium">{value}</span>
-    </div>
+  <div className="flex items-center space-x-2">
+    <Icon className="w-5 h-5 text-gray-400 flex-shrink-0" />
+    <span className="text-gray-600">{label}:</span>
+    <span className="font-medium">{value}</span>
+  </div>
 );
-  
-  export default ServiceDetails;
+
+export default ServiceDetails;

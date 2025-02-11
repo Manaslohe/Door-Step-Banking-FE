@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { auth } from '../utils/auth';
+import { handleApiError } from '../utils/errorHandling';
 
 // Determine the base URL based on the current environment
 const getBaseUrl = () => {
@@ -238,48 +239,37 @@ export const logout = async () => {
 
 export const createTicket = async (ticketData) => {
   try {
-    const userData = localStorage.getItem('userData');
-    if (!userData) {
-      throw new Error('User not authenticated');
-    }
-
-    const user = JSON.parse(userData);
-    const response = await api.post('/tickets', {
-      ...ticketData,
-      userId: user._id // Explicitly include userId in request body
-    });
-    
+    const response = await api.post('/tickets', ticketData);
     return response.data;
   } catch (error) {
-    if (error.response?.status === 401) {
-      // If unauthorized, try to continue without token
-      try {
-        const userData = JSON.parse(localStorage.getItem('userData'));
-        const fallbackResponse = await api.post('/tickets', {
-          ...ticketData,
-          userId: userData._id
-        }, {
-          headers: {
-            'user-id': userData._id
-          }
-        });
-        return fallbackResponse.data;
-      } catch (fallbackError) {
-        console.error('Fallback request failed:', fallbackError);
-        throw new Error('Failed to create ticket. Please try logging in again.');
-      }
-    }
-    console.error('Create Ticket Error:', error);
-    handleApiError(error);
+    throw handleApiError(error);
   }
 };
 
 export const getUserTickets = async (userId) => {
   try {
-    const response = await api.get(`/tickets/user/${userId}`);
+    console.log('Fetching tickets for user:', userId);
+    const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+
+    // Add token to headers if available, but don't require it
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await api.get(`/tickets/user/${userId}`, { headers });
+    console.log('Tickets response:', response.data);
     return response.data;
   } catch (error) {
-    handleApiError(error);
+    console.error('Error fetching user tickets:', {
+      status: error.response?.status,
+      message: error.message,
+      data: error.response?.data
+    });
+    // Return empty tickets array instead of throwing error
+    return { success: true, tickets: [] };
   }
 };
 
@@ -288,7 +278,7 @@ export const getTicketById = async (ticketId) => {
     const response = await api.get(`/tickets/${ticketId}`);
     return response.data;
   } catch (error) {
-    handleApiError(error);
+    throw handleApiError(error);
   }
 };
 

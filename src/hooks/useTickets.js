@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { createTicket, getUserTickets, getTicketById } from '../services/api';
+import { handleApiError } from '../utils/errorHandling';
+import { useNavigate } from 'react-router-dom';
 
 export const useTickets = (userId) => {
+  const navigate = useNavigate();
   const [tickets, setTickets] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -12,9 +15,12 @@ export const useTickets = (userId) => {
     setError(null);
     try {
       const response = await getUserTickets(userId);
-      setTickets(response.tickets);
+      setTickets(response.tickets || []);
     } catch (err) {
-      setError(err.message);
+      // Don't set error for auth failures
+      if (!err.message.includes('auth')) {
+        setError(handleApiError(err));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -27,8 +33,9 @@ export const useTickets = (userId) => {
       const response = await getTicketById(ticketId);
       return response.ticket;
     } catch (err) {
-      setError(err.message);
-      throw err;
+      const errorMessage = handleApiError(err);
+      setError(errorMessage);
+      throw new Error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -42,8 +49,9 @@ export const useTickets = (userId) => {
       setTickets(prev => [response.ticket, ...prev]);
       return response.ticket;
     } catch (err) {
-      setError(err.message);
-      throw err;
+      const errorMessage = handleApiError(err);
+      setError(errorMessage);
+      throw new Error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
