@@ -1,10 +1,16 @@
-import React, { useState } from 'react';
-import { X, Send, SmilePlus } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Send, SmilePlus, CheckCircle2 } from 'lucide-react'; // Add CheckCircle2 import
+import Sentiment from 'sentiment';
+import api from '@/services/api';
 
 const FeedbackPopup = ({ onClose }) => {
   const [feedback, setFeedback] = useState('');
   const [rating, setRating] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [sentimentScore, setSentimentScore] = useState(null);
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  const sentiment = new Sentiment();
 
   const emojis = [
     { value: 1, icon: '😢', label: 'Very Dissatisfied' },
@@ -14,17 +20,141 @@ const FeedbackPopup = ({ onClose }) => {
     { value: 5, icon: '😄', label: 'Very Satisfied' }
   ];
 
+  // Convert sentiment score to rating (1-5 scale)
+  const getAutomaticRating = (sentimentResult) => {
+    if (!sentimentResult) return 0;
+    
+    const comparative = sentimentResult.comparative;
+    if (comparative <= -0.75) return 1;        // Very Dissatisfied
+    if (comparative <= -0.25) return 2;        // Dissatisfied
+    if (comparative >= 0.75) return 5;         // Very Satisfied
+    if (comparative >= 0.25) return 4;         // Satisfied
+    return 3;                                  // Neutral
+  };
+
+  useEffect(() => {
+    if (feedback.trim()) {
+      const result = sentiment.analyze(feedback);
+      setSentimentScore(result);
+      setRating(getAutomaticRating(result));
+    } else {
+      setSentimentScore(null);
+      setRating(0);
+    }
+  }, [feedback]);
+
+  const getSentimentColor = () => {
+    if (!sentimentScore) return 'gray-50/50';
+    if (sentimentScore.comparative > 0.5) return 'green-50';
+    if (sentimentScore.comparative < -0.5) return 'red-50';
+    return 'yellow-50';
+  };
+
+  const analyzeWords = (sentimentResult) => {
+    const wordCounts = {};
+    const words = sentimentResult.tokens;
+    
+    words.forEach(word => {
+      wordCounts[word] = (wordCounts[word] || 0) + 1;
+    });
+
+    const positiveWords = sentimentResult.positive.map(word => ({
+      word,
+      score: sentiment.analyze(word).score,
+      count: wordCounts[word] || 1
+    }));
+
+    const negativeWords = sentimentResult.negative.map(word => ({
+      word,
+      score: sentiment.analyze(word).score,
+      count: wordCounts[word] || 1
+    }));
+
+    return { positiveWords, negativeWords };
+  };
+
+  const getUserDataFromToken = () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return null;
+
+      // Get user data from localStorage
+      const userData = JSON.parse(localStorage.getItem('userData'));
+      if (!userData) return null;
+
+      return {
+        token,
+        user: userData
+      };
+    } catch (error) {
+      console.error('Error getting user data:', error);
+      return null;
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    const authData = getUserDataFromToken();
+    if (!authData) {
+      console.error('No authentication data found');
+      return;
+    }
+
+    const sentimentResult = sentiment.analyze(feedback);
+    const wordAnalysis = analyzeWords(sentimentResult);
     
-    console.log({ feedback, rating });
-    setIsSubmitting(false);
-    onClose();
+    try {
+      await api.submitFeedback({
+        userId: authData.user._id,
+        userName: `${authData.user.firstName} ${authData.user.lastName}`,
+        userPhone: authData.user.phone,
+        feedback,
+        rating,
+        sentiment: {
+          score: sentimentResult.score,
+          comparative: sentimentResult.comparative,
+          positive: sentimentResult.positive,
+          negative: sentimentResult.negative,
+          tokens: sentimentResult.tokens,
+          wordAnalysis: {
+            positiveWords: wordAnalysis.positiveWords,
+            negativeWords: wordAnalysis.negativeWords
+          }
+        }
+      });
+
+      setIsSuccess(true);
+      setTimeout(() => {
+        onClose();
+      }, 2000); // Close after 2 seconds
+
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  if (isSuccess) {
+    return (
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[480px] p-8 transform transition-all">
+          <div className="flex flex-col items-center text-center space-y-4">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+              <CheckCircle2 className="w-10 h-10 text-green-500 animate-[scale_0.5s_ease-in-out]" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900">Thank You!</h3>
+            <p className="text-gray-500">Your feedback has been submitted successfully.</p>
+            <div className="animate-[fadeIn_1s_ease-in-out] text-4xl">
+              {rating >= 4 ? '😄' : rating >= 3 ? '😊' : '🙂'}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
@@ -52,23 +182,37 @@ const FeedbackPopup = ({ onClose }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          {/* Feedback Text Area with Sentiment Analysis */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Tell us more about your experience
+            </label>
+            <textarea
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              className={`w-full p-4 border border-gray-200 rounded-xl resize-none
+                focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                placeholder:text-gray-400 transition-all h-[100px]
+                bg-${getSentimentColor()}`}
+              placeholder="What went well? What could be improved?"
+            />
+          </div>
+
           {/* Rating Section with improved alignment and grayscale effect */}
           <div className="space-y-4">
             <label className="block text-sm font-medium text-gray-700">
-              How was your experience?
+              Sentiment Analysis
             </label>
             <div className="grid grid-cols-5 gap-2 px-2">
               {emojis.map((emoji) => (
-                <button
+                <div
                   key={emoji.value}
-                  type="button"
-                  onClick={() => setRating(emoji.value)}
                   className={`
                     relative group flex flex-col items-center
                     py-3 px-1 rounded-xl transition-all duration-300
                     ${rating === emoji.value 
                       ? 'z-10' 
-                      : 'filter grayscale opacity-40 hover:opacity-60 hover:grayscale-[0.6]'}
+                      : 'filter grayscale opacity-40'}
                   `}
                 >
                   {/* Glow effect background */}
@@ -80,9 +224,7 @@ const FeedbackPopup = ({ onClose }) => {
                   <div className="relative flex flex-col items-center">
                     <span className={`
                       text-3xl transition-all duration-300 mb-2
-                      ${rating === emoji.value 
-                        ? 'transform scale-125' 
-                        : 'group-hover:scale-110'}
+                      ${rating === emoji.value ? 'transform scale-125' : ''}
                     `}>
                       {emoji.icon}
                     </span>
@@ -96,25 +238,9 @@ const FeedbackPopup = ({ onClose }) => {
                       {emoji.label}
                     </span>
                   </div>
-                </button>
+                </div>
               ))}
             </div>
-          </div>
-
-          {/* Feedback Text Area */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Tell us more about your experience
-            </label>
-            <textarea
-              value={feedback}
-              onChange={(e) => setFeedback(e.target.value)}
-              className="w-full p-4 border border-gray-200 rounded-xl resize-none
-                focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                placeholder:text-gray-400 transition-all h-[100px]
-                bg-gray-50/50"
-              placeholder="What went well? What could be improved?"
-            />
           </div>
 
           {/* Submit Button */}

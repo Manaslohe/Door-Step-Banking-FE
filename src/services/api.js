@@ -97,6 +97,21 @@ api.verifyPAN = async (pan) => {
   }
 };
 
+// Add feedback API method
+api.submitFeedback = async (feedbackData) => {
+  try {
+    const { data } = await api.post('/feedback', feedbackData); // Changed from /feedback/submit
+    return data;
+  } catch (error) {
+    console.error('Feedback submission error:', {
+      status: error.response?.status,
+      message: error.message,
+      data: error.response?.data
+    });
+    throw error;
+  }
+};
+
 export const login = async (credentials) => {
   try {
     const { data } = await api.post('/users/login', credentials);

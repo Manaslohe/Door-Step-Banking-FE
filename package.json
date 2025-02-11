@@ -30,6 +30,7 @@
     "react-hot-toast": "^2.5.1",
     "react-router-dom": "^7.1.5",
     "react-slick": "^0.30.3",
+    "sentiment": "^5.0.2",
     "slick-carousel": "^1.8.1",
     "tailwind-merge": "^2.6.0"
   },
