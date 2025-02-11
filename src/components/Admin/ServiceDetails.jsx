@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, ArrowLeft, CheckCircle, XCircle, UserPlus, AlertCircle, Clock, IndianRupee, Calendar, Phone, User, Loader2, MapPin, FileText } from 'lucide-react';
 import AssignAgentModal from './AssignAgentModal';
-import Toast from '../common/Toast';
+import Toast from './Toast';
 
 const ServiceDetails = ({ serviceId, onClose, onUpdate }) => {
   const [service, setService] = useState(null);
