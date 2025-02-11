@@ -33,7 +33,7 @@ const ManageAgents = () => {
         }
 
         // Verify token validity by making a test request
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/verify`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/verify`, {  // Add /api prefix
           headers: {
             'Authorization': `Bearer ${adminToken}`
           }
@@ -62,7 +62,7 @@ const ManageAgents = () => {
         return;
       }
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/users?userType=agent`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users?userType=agent`, {  // Add /api prefix
         headers: {
           'Authorization': `Bearer ${adminToken}`,
           'Accept': 'application/json'
@@ -122,11 +122,14 @@ const ManageAgents = () => {
     if (!window.confirm('Are you sure you want to remove this agent?')) return;
     
     try {
+      console.log('Removing agent:', agentId);
       await fetchWithAdminAuth(`/users/${agentId}`, {
         method: 'DELETE'
       });
-      await fetchAgents();
+      console.log('Agent removed successfully');
+      await fetchAgents(); // Refresh the list
     } catch (err) {
+      console.error('Error removing agent:', err);
       setError('Failed to remove agent');
     }
   };

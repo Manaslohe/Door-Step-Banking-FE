@@ -18,7 +18,7 @@ const ServiceDetails = ({ serviceId, onClose, onUpdate }) => {
       setLoading(true);
       const adminToken = localStorage.getItem('adminToken');
       
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/services/${serviceId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/services/${serviceId}`, {  // Add /api prefix
         headers: {
           'Authorization': `Bearer ${adminToken}`,
           'Accept': 'application/json'
@@ -61,9 +61,18 @@ const ServiceDetails = ({ serviceId, onClose, onUpdate }) => {
       
       const adminToken = localStorage.getItem('adminToken');
       const adminUser = JSON.parse(localStorage.getItem('adminUser'));
-      console.log('Sending status update:', { status, adminName: adminUser?.name });
+      
+      if (!adminToken) {
+        throw new Error('Admin authorization required');
+      }
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/services/${serviceId}/status`, {
+      console.log('Making status update request:', {
+        status,
+        adminToken,
+        adminUser
+      });
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/services/${serviceId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -72,7 +81,9 @@ const ServiceDetails = ({ serviceId, onClose, onUpdate }) => {
         },
         body: JSON.stringify({ 
           status,
-          adminName: adminUser?.name || 'Admin'
+          adminName: adminUser?.name,
+          userType: 'admin',
+          adminId: adminUser?.id
         })
       });
 

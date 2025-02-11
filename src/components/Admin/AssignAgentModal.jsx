@@ -22,7 +22,7 @@ const AssignAgentModal = ({ serviceId, onClose, onAssignmentSuccess }) => {
         throw new Error('No admin token found');
       }
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/users?userType=agent`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users?userType=agent`, {  // Add /api prefix
         headers: {
           'Authorization': `Bearer ${adminToken}`,
           'Accept': 'application/json',
@@ -36,6 +36,7 @@ const AssignAgentModal = ({ serviceId, onClose, onAssignmentSuccess }) => {
       }
       
       const data = await response.json();
+      console.log('Fetched agents:', data);  // Add debug log
       
       if (data.success && Array.isArray(data.users)) {
         setAgents(data.users.filter(user => user.userType === 'agent' && user.isActive));
@@ -63,7 +64,7 @@ const AssignAgentModal = ({ serviceId, onClose, onAssignmentSuccess }) => {
       const adminToken = localStorage.getItem('adminToken');
       const adminUser = JSON.parse(localStorage.getItem('adminUser'));
       
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/services/${serviceId}/assign`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/services/${serviceId}/assign`, {  // Add /api prefix
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -76,12 +77,19 @@ const AssignAgentModal = ({ serviceId, onClose, onAssignmentSuccess }) => {
         })
       });
 
+      // Add debug logging
+      console.log('Assignment response:', {
+        status: response.status,
+        statusText: response.statusText
+      });
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to assign agent');
       }
 
       const data = await response.json();
+      console.log('Assignment successful:', data);
       
       if (!data.success) {
         throw new Error(data.message || 'Failed to assign agent');

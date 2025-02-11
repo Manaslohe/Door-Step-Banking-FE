@@ -8,7 +8,15 @@ export const fetchWithAdminAuth = async (endpoint, options = {}) => {
   }
 
   try {
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    // Always add /api prefix to endpoints
+    const apiEndpoint = endpoint.startsWith('/') ? `/api${endpoint}` : `/api/${endpoint}`;
+    
+    console.log('Making admin API request:', {
+      url: `${API_URL}${apiEndpoint}`,
+      method: options.method || 'GET'
+    });
+
+    const response = await fetch(`${API_URL}${apiEndpoint}`, {
       ...options,
       headers: {
         'Authorization': `Bearer ${adminToken}`,
@@ -17,7 +25,6 @@ export const fetchWithAdminAuth = async (endpoint, options = {}) => {
       }
     });
 
-    // Check if response is okay before throwing error
     if (response.status === 401) {
       localStorage.removeItem('adminToken');
       window.location.href = '/admin/login';
@@ -32,7 +39,6 @@ export const fetchWithAdminAuth = async (endpoint, options = {}) => {
     
     return data;
   } catch (error) {
-    // Don't remove token for network errors
     if (error.message !== 'Admin session expired') {
       console.error('API Error:', error);
     }

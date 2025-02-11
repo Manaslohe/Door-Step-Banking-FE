@@ -26,7 +26,7 @@ const AdminLogin = ({ onClose }) => {
     setLoading(true);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/admin-login`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/admin-login`, {  // Add /api prefix
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

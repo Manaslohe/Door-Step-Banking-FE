@@ -37,7 +37,7 @@ const AdminDashboard = () => {
 
   const fetchServices = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/services/all`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/services/all`);
       if (!response.ok) throw new Error('Failed to fetch services');
       const data = await response.json();
       setServices(data.data);
