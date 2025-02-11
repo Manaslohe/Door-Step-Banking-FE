@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, User, Loader2, Search, UserCheck, AlertCircle, Users } from 'lucide-react';
-import Toast from '../common/Toast';
+import Toast from './Toast';
 
 const AssignAgentModal = ({ serviceId, onClose, onAssignmentSuccess }) => {
   const [agents, setAgents] = useState([]);
