@@ -254,10 +254,31 @@ export const logout = async () => {
 
 export const createTicket = async (ticketData) => {
   try {
-    const response = await api.post('/tickets', ticketData);
-    return response.data;
+    const token = localStorage.getItem('token');
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(ticketData)
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to create ticket');
+    }
+
+    return data;
   } catch (error) {
-    throw handleApiError(error);
+    console.error('Error creating ticket:', error);
+    throw error;
   }
 };
 

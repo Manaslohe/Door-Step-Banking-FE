@@ -32,8 +32,8 @@ const ManageAgents = () => {
           return;
         }
 
-        // Verify token validity by making a test request
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/verify`, {  // Add /api prefix
+        // Verify token validity
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/verify`, {
           headers: {
             'Authorization': `Bearer ${adminToken}`
           }
@@ -43,6 +43,7 @@ const ManageAgents = () => {
           throw new Error('Invalid token');
         }
 
+        // Token is valid, fetch agents
         fetchAgents();
       } catch (err) {
         console.error('Auth check failed:', err);

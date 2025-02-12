@@ -7,6 +7,7 @@ import { EditUserModal } from '../Modals/EditUserModal';
 import { useUser } from '../../hooks/useUser';
 import { useTickets } from '../../hooks/useTickets'; // Add this import
 import useServiceTracking from '../../hooks/useServiceTracking';
+import { useTranslation } from '../../context/TranslationContext';
 
 const UserDashboard = () => {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ const UserDashboard = () => {
   const { tickets: recentTickets, loading: ticketsLoading } = useTickets(user?._id);
   const { services: recentServices, loading: servicesLoading } = useServiceTracking();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const { t } = useTranslation();
 
   const handleUserUpdate = (updatedUser) => {
     window.location.reload();
@@ -51,8 +53,8 @@ const UserDashboard = () => {
             group-hover:scale-110 transition-transform" />
         </div>
         <div className="flex-1">
-          <h2 className="text-lg md:text-xl font-bold text-white mb-1">{title}</h2>
-          <p className="text-blue-50 text-sm md:text-base leading-relaxed">{description}</p>
+          <h2 className="text-lg md:text-xl font-bold text-white mb-1">{t[title]}</h2>
+          <p className="text-blue-50 text-sm md:text-base leading-relaxed">{t[description]}</p>
         </div>
         <ChevronRight className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
@@ -76,7 +78,7 @@ const UserDashboard = () => {
       return (
         <div className="flex flex-col items-center justify-center h-48 bg-gray-50 rounded-xl">
           <Ticket className="w-12 h-12 text-gray-400 mb-2" />
-          <p className="text-gray-500 font-medium">No tickets found</p>
+          <p className="text-gray-500 font-medium">{t.noTicketsFound}</p>
         </div>
       );
     }
@@ -143,7 +145,7 @@ const UserDashboard = () => {
       return (
         <div className="flex flex-col items-center justify-center h-48 bg-gray-50 rounded-xl">
           <Package className="w-12 h-12 text-gray-400 mb-2" />
-          <p className="text-gray-500 font-medium">No active services found</p>
+          <p className="text-gray-500 font-medium">{t.noServicesFound}</p>
         </div>
       );
     }
@@ -190,14 +192,14 @@ const UserDashboard = () => {
           <div className="grid md:grid-cols-2 gap-4">
             <ActionCard
               icon={Package}
-              title="Track Service"
-              description="Monitor your active services and stay updated with real-time status"
+              title="trackService"
+              description="trackServiceDesc"
               onClick={goToServiceTracking}
             />
             <ActionCard
               icon={Ticket}
-              title="Track Ticket"
-              description="Check and manage your support tickets efficiently"
+              title="trackTicket"
+              description="trackTicketDesc"
               onClick={goToTrackTicket}
             />
           </div>
@@ -215,7 +217,7 @@ const UserDashboard = () => {
                   <Users className="w-5 h-5 text-blue-600" />
                 </div>
                 <h2 className="text-lg font-semibold text-gray-800">
-                  Personal Information
+                  {t.personalInformation}
                 </h2>
               </div>
               <button
@@ -236,21 +238,21 @@ const UserDashboard = () => {
             ) : (
               <div className="grid md:grid-cols-2 gap-3 text-sm">
                 <div className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg">
-                  <span className="text-gray-500">Full Name</span>
+                  <span className="text-gray-500">{t.fullName}</span>
                   <span className="font-medium text-gray-900">
                     {`${user?.firstName} ${user?.lastName}`}
                   </span>
                 </div>
                 <div className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg">
-                  <span className="text-gray-500">Email</span>
+                  <span className="text-gray-500">{t.email}</span>
                   <span className="font-medium text-gray-900">{user?.email}</span>
                 </div>
                 <div className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg">
-                  <span className="text-gray-500">Phone</span>
+                  <span className="text-gray-500">{t.phone}</span>
                   <span className="font-medium text-gray-900">{user?.phone}</span>
                 </div>
                 <div className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg">
-                  <span className="text-gray-500">Address</span>
+                  <span className="text-gray-500">{t.address}</span>
                   <span className="font-medium text-gray-900">{user?.address}</span>
                 </div>
               </div>
@@ -266,13 +268,13 @@ const UserDashboard = () => {
                   <div className="p-2 bg-blue-50 rounded-lg">
                     <Package className="w-6 h-6 text-blue-600" />
                   </div>
-                  <h2 className="text-xl font-semibold text-gray-800">Active Services</h2>
+                  <h2 className="text-xl font-semibold text-gray-800">{t.activeServices}</h2>
                 </div>
                 <button
                   onClick={goToServiceTracking}
                   className="text-blue-600 hover:text-blue-700 text-sm font-medium"
                 >
-                  View All
+                  {t.viewAll}
                 </button>
               </div>
 
@@ -289,13 +291,13 @@ const UserDashboard = () => {
                   <div className="p-2 bg-blue-50 rounded-lg">
                     <Ticket className="w-6 h-6 text-blue-600" />
                   </div>
-                  <h2 className="text-xl font-semibold text-gray-800">Recent Tickets</h2>
+                  <h2 className="text-xl font-semibold text-gray-800">{t.recentTickets}</h2>
                 </div>
                 <button
                   onClick={() => navigate('/support')}
                   className="text-blue-600 hover:text-blue-700 text-sm font-medium"
                 >
-                  View All
+                  {t.viewAll}
                 </button>
               </div>
 

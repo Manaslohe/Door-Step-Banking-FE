@@ -2,50 +2,52 @@ import React, { useState } from 'react';
 import { Settings, ArrowRight, DollarSign, CreditCard, UserPlus, FileText, FileCheck, Globe } from 'lucide-react';
 import DashboardLayout from './DashboardLayout';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from '../../context/TranslationContext';
 
 const ServicesOffered = () => {
   const navigate = useNavigate();
   const [hoveredIndex, setHoveredIndex] = useState(null);
+  const { t } = useTranslation();
 
   const services = [
     {
-      name: "CASH DEPOSIT",
-      description: "Securely deposit cash into your account",
+      name: t.services.cashDeposit.name,
+      description: t.services.cashDeposit.description,
       icon: DollarSign,
       color: "from-blue-500 to-blue-600",
-      path: "/services/cash-deposit"  // This matches the route in App.jsx
+      path: "/services/cash-deposit"
     },
     {
-      name: "CASH WITHDRAWAL",
-      description: "Withdraw cash from your account",
+      name: t.services.cashWithdrawal.name,
+      description: t.services.cashWithdrawal.description,
       icon: CreditCard,
       color: "from-blue-600 to-blue-700",
       path: "/services/cash-withdrawal"
     },
     {
-      name: "OPEN NEW ACCOUNT",
-      description: "Start your banking journey with us",
+      name: t.services.newAccount.name,
+      description: t.services.newAccount.description,
       icon: UserPlus,
       color: "from-blue-500 to-blue-600",
       path: "/services/new-account"
     },
     {
-      name: "DOCUMENT COLLECT / DELIVERY",
-      description: "Convenient document handling services",
+      name: t.services.documentService.name,
+      description: t.services.documentService.description,
       icon: FileText,
       color: "from-blue-600 to-blue-700",
       path: "/services/document-service"
     },
     {
-      name: "LIFE CERTIFICATE COLLECTION",
-      description: "Easy submission of life certificates",
+      name: t.services.lifeCertificate.name,
+      description: t.services.lifeCertificate.description,
       icon: FileCheck,
       color: "from-blue-500 to-blue-600",
       path: "/services/life-certificate"
     },
     {
-      name: "ONLINE ASSISTANCE",
-      description: "24/7 support for all your banking needs",
+      name: t.services.onlineAssistance.name,
+      description: t.services.onlineAssistance.description,
       icon: Globe,
       color: "from-blue-600 to-blue-700",
       path: "/services/online-assistance"

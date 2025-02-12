@@ -23,12 +23,35 @@ const AdminDashboard = () => {
   const [activeFilterCount, setActiveFilterCount] = useState(0);
 
   useEffect(() => {
-    const adminToken = localStorage.getItem('adminToken');
-    if (!adminToken) {
-      navigate('/');
-      return;
-    }
-    fetchServices();
+    const checkAdminAuth = async () => {
+      try {
+        const adminToken = localStorage.getItem('adminToken');
+        if (!adminToken) {
+          navigate('/admin/login');
+          return;
+        }
+
+        // Verify token validity
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/verify`, {
+          headers: {
+            'Authorization': `Bearer ${adminToken}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Invalid token');
+        }
+
+        // Token is valid, fetch services
+        fetchServices();
+      } catch (err) {
+        console.error('Auth check failed:', err);
+        localStorage.removeItem('adminToken');
+        navigate('/admin/login');
+      }
+    };
+
+    checkAdminAuth();
   }, [navigate]);
 
   useEffect(() => {

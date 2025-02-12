@@ -1,6 +1,9 @@
 export const formatCurrency = (amount) => {
-  if (!amount && amount !== 0) return '₹0';
-  return `₹${Number(amount).toLocaleString('en-IN')}`;
+  if (!amount) return '0';
+  return Number(amount).toLocaleString('en-IN', {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 0
+  });
 };
 
 export const formatDate = (date) => {

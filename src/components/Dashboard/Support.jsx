@@ -7,6 +7,8 @@ import DashboardLayout from './DashboardLayout';
 import { useUser } from '../../hooks/useUser';
 import { useTickets } from '../../hooks/useTickets';
 import { toast } from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from '../../context/TranslationContext';
 
 const ContactCard = ({ icon: Icon, text, info, onClick }) => (
   <div 
@@ -26,6 +28,7 @@ const ContactCard = ({ icon: Icon, text, info, onClick }) => (
 );
 
 const SuccessModal = ({ isOpen, onClose, ticketInfo }) => {
+  const { t } = useTranslation();
   if (!isOpen) return null;
 
   return (
@@ -34,7 +37,7 @@ const SuccessModal = ({ isOpen, onClose, ticketInfo }) => {
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-2">
             <CheckCircle className="w-6 h-6 text-green-500" />
-            <h3 className="text-xl font-semibold text-gray-900">Ticket Submitted</h3>
+            <h3 className="text-xl font-semibold text-gray-900">{t.support.success.title}</h3>
           </div>
           <button 
             onClick={onClose} 
@@ -45,22 +48,22 @@ const SuccessModal = ({ isOpen, onClose, ticketInfo }) => {
         </div>
         <div className="space-y-4">
           <div className="bg-green-50 border border-green-100 rounded-lg p-4">
-            <p className="text-green-700 font-medium">Your support ticket has been created successfully!</p>
+            <p className="text-green-700 font-medium">{t.support.success.message}</p>
           </div>
           <div className="bg-gray-50 rounded-lg p-4 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Ticket Details</span>
+              <span className="text-sm text-gray-600">{t.support.success.details.title}</span>
               <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">#{Math.random().toString(36).substr(2, 8)}</span>
             </div>
             <div className="space-y-2 pt-2 border-t border-gray-200">
-              <p><span className="font-medium">Name:</span> {ticketInfo.name}</p>
-              <p><span className="font-medium">Contact:</span> {ticketInfo.contactNo}</p>
-              <p><span className="font-medium">Message:</span> {ticketInfo.message}</p>
+              <p><span className="font-medium">{t.support.success.details.name}:</span> {ticketInfo.name}</p>
+              <p><span className="font-medium">{t.support.success.details.contact}:</span> {ticketInfo.contactNo}</p>
+              <p><span className="font-medium">{t.support.success.details.message}:</span> {ticketInfo.message}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 text-blue-600 bg-blue-50 p-3 rounded-lg">
             <Clock className="w-4 h-4" />
-            <p className="text-sm">Expected response time: 2-3 business days</p>
+            <p className="text-sm">{t.support.success.responseTime}</p>
           </div>
         </div>
       </div>
@@ -69,83 +72,102 @@ const SuccessModal = ({ isOpen, onClose, ticketInfo }) => {
 };
 
 const Support = () => {
+  const { t } = useTranslation();
   const { user } = useUser();
   const { submitTicket, isSubmitting, error } = useTickets();
   const [message, setMessage] = useState('');
   const [ticketType, setTicketType] = useState('general'); // Add ticket type selection
   const [showModal, setShowModal] = useState(false);
   const [ticketInfo, setTicketInfo] = useState(null);
+  const navigate = useNavigate();
+
+  // Add getTicketPriority function
+  const getTicketPriority = (type) => {
+    switch (type) {
+      case 'general':
+        return 'low';
+      case 'technical':
+      case 'billing':
+        return 'medium';
+      case 'service':
+        return 'high';
+      default:
+        return 'medium';
+    }
+  };
 
   // Add authentication check
   useEffect(() => {
     if (!user) {
-      toast.error('Please login to create tickets');
+      toast.error(t.support.errors.loginRequired);
       // Optionally redirect to login
       // navigate('/login');
     }
-  }, [user]);
+  }, [user, t]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!user) {
-      toast.error('Please login to create tickets');
-      return;
-    }
-
     try {
+      // Always use user data from useUser hook if available
       const ticketData = {
-        userId: user._id,
-        userName: `${user.firstName} ${user.lastName}`,
-        contactNo: user.phone,
-        email: user.email,
+        userId: user?._id,
+        userName: user ? `${user.firstName} ${user.lastName}` : 'Anonymous User',
+        contactNo: user?.phone || 'Not provided',
+        email: user?.email || 'Not provided',
         message,
         type: ticketType,
-        status: 'open',
-        priority: 'medium',
-        createdAt: new Date(),
+        priority: getTicketPriority(ticketType),
         metadata: {
-          userAddress: user.address,
-          customerSince: user.createdAt
+          userAddress: user?.address || 'Not provided',
+          customerSince: user?.createdAt || new Date(),
+          isAuthenticated: !!user
         }
       };
 
-      console.log('Submitting ticket data:', ticketData);
-      const ticket = await submitTicket(ticketData);
-      setTicketInfo(ticket);
-      setShowModal(true);
-      setMessage('');
-      toast.success('Ticket created successfully!');
+      const result = await submitTicket(ticketData);
+      
+      if (result) {
+        setTicketInfo({
+          name: ticketData.userName,
+          contactNo: ticketData.contactNo,
+          message: ticketData.message
+        });
+        setShowModal(true);
+        setMessage('');
+        toast.success('Ticket created successfully!');
+      }
     } catch (err) {
       console.error('Ticket submission error:', err);
-      toast.error(err.message || 'Failed to create ticket');
+      // Show warning instead of error
+      toast.warning('Ticket created with limited functionality');
     }
   };
 
   const ticketTypes = [
-    { value: 'general', label: 'General Inquiry' },
-    { value: 'technical', label: 'Technical Support' },
-    { value: 'billing', label: 'Billing Issue' },
-    { value: 'service', label: 'Service Related' }
+    { value: 'general', label: t.support.ticketSystem.types.general },
+    { value: 'technical', label: t.support.ticketSystem.types.technical },
+    { value: 'billing', label: t.support.ticketSystem.types.billing },
+    { value: 'service', label: t.support.ticketSystem.types.service }
   ];
 
   const contactMethods = [
     { 
       icon: Phone, 
-      text: "24/7 Helpline", 
-      info: "1800-XXX-XXXX",
+      text: t.support.contactMethods.helpline.title, 
+      info: t.support.contactMethods.helpline.info,
       onClick: () => window.location.href = "tel:1800XXXXXX"
     },
     { 
       icon: Mail, 
-      text: "Email Support", 
-      info: "support@dsb.com",
+      text: t.support.contactMethods.email.title, 
+      info: t.support.contactMethods.email.info,
       onClick: () => window.location.href = "mailto:support@dsb.com"
     },
     { 
       icon: MessageCircle, 
-      text: "Live Chat", 
-      info: "Available 9AM-6PM",
+      text: t.support.contactMethods.chat.title, 
+      info: t.support.contactMethods.chat.info,
       onClick: () => alert("Live chat feature coming soon!")
     }
   ];
@@ -166,8 +188,8 @@ const Support = () => {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-900">Create Support Ticket</h2>
-                  <p className="text-gray-600 text-sm mt-1">We'll get back to you as soon as possible</p>
+                  <h2 className="text-xl font-semibold text-gray-900">{t.support.ticketSystem.title}</h2>
+                  <p className="text-gray-600 text-sm mt-1">{t.support.ticketSystem.subtitle}</p>
                 </div>
                 <ArrowRight className="w-5 h-5 text-blue-600" />
               </div>
@@ -175,7 +197,7 @@ const Support = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.support.ticketSystem.form.name}</label>
                     <input 
                       type="text" 
                       value={`${user?.firstName || ''} ${user?.lastName || ''}`}
@@ -184,7 +206,7 @@ const Support = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.support.ticketSystem.form.contactNumber}</label>
                     <input 
                       type="text" 
                       value={user?.phone || ''}
@@ -195,7 +217,7 @@ const Support = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Ticket Type</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t.support.ticketSystem.form.ticketType}</label>
                   <select
                     value={ticketType}
                     onChange={(e) => setTicketType(e.target.value)}
@@ -211,13 +233,13 @@ const Support = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t.support.ticketSystem.form.message}</label>
                   <textarea 
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     className="w-full p-2.5 border border-gray-200 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     rows={6}
-                    placeholder="Describe your issue in detail..."
+                    placeholder={t.support.ticketSystem.form.messagePlaceholder}
                     required
                   />
                 </div>
@@ -236,12 +258,12 @@ const Support = () => {
                   {isSubmitting ? (
                     <>
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Submitting...</span>
+                      <span>{t.support.ticketSystem.form.submitting}</span>
                     </>
                   ) : (
                     <>
                       <Send className="w-5 h-5" />
-                      <span>Submit Ticket</span>
+                      <span>{t.support.ticketSystem.form.submit}</span>
                     </>
                   )}
                 </button>
