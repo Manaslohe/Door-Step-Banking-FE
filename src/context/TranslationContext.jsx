@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState } from 'react';
+import { Users, AlertTriangle, Shield, Clock } from 'lucide-react';
 
 export const translations = {
   english: {
@@ -10,7 +11,7 @@ export const translations = {
     loggingOut: 'Logging out...',
     
     // Dashboard translations
-    welcomeMessage: 'Welcome back to Saral Bank',
+    welcomeMessage: 'Welcome back to Saral Banking',
     welcomeSubtext: 'Your trusted financial partner for seamless banking',
     exploreServices: 'Explore Our Services',
     
@@ -26,18 +27,32 @@ export const translations = {
     timeframe: 'Timeframe',
     noAdviceAvailable: 'No investment advice available',
     
-    // Sidebar translations
-    home: 'Home',
-    userProfile: 'User Profile',
-    servicesOffered: 'Banking Services',
-    rbiGuidelines: 'RBI Guidelines',
-    blogForum: 'Blog/Forum',
-    pricingStructure: 'Pricing Structure',
-    trackService: 'Track Service',
-    trackTicket: 'Track Ticket',
-    support: 'Support',
-    shareFeedback: 'Share Feedback',
-    helpImprove: 'Help us improve our services',
+    // Navigation translations
+    navigation: {
+      home: 'Home',
+      userProfile: 'User Profile',
+      servicesOffered: 'Banking Services',
+      rbiGuidelines: 'RBI Guidelines',
+      blogForum: 'Blog/Forum',
+      pricingStructure: 'Pricing Structure',
+      trackService: 'Track Service',
+      trackTicket: 'Track Ticket',
+      support: 'Support',
+      shareFeedback: 'Share Feedback',
+      helpImprove: 'Help us improve our services'
+    },
+
+    // Service Tracking Section
+    tracking: {
+      service: {
+        title: 'Track Service',
+        description: 'Monitor your active services and stay updated with real-time status'
+      },
+      ticket: {
+        title: 'Track Ticket',
+        description: 'Check and manage your support tickets efficiently'
+      }
+    },
 
     // Chatbot translations
     chatbotTitle: 'Saral Bot',
@@ -50,7 +65,7 @@ export const translations = {
       afternoon: 'Good Afternoon',
       evening: 'Good Evening'
     },
-    bankName: 'Saral Bank',
+    bankName: 'Saral Banking',
     welcomeBack: 'Welcome back to',
     trustedPartner: 'Your trusted financial partner for seamless banking',
 
@@ -248,6 +263,165 @@ export const translations = {
         loginRequired: "Please login to create tickets",
         submitFailed: "Failed to create ticket"
       }
+    },
+
+    // RBI Guidelines Page translations
+    rbiGuidelinesPage: {
+      downloadPDF: 'Download PDF',
+      rbiWebsite: 'RBI Website',
+      masterDirectionTitle: 'Master Direction – Know Your Customer (KYC) Direction, 2016',
+      masterDirectionDescription: 'These directions are issued under Section 35A of the Banking Regulation Act, 1949 and Rule 7 of Prevention of Money-Laundering (Maintenance of Records) Rules, 2005.',
+      disclaimer: 'This is a summary of the guidelines. For complete details, please refer to the official RBI documentation.'
+    },
+    rbiGuidelinesData: [
+      {
+        id: 1,
+        title: 'Customer Due Diligence (CDD)',
+        icon: Users,
+        content: 'REs shall undertake customer due diligence while establishing account-based relationships and monitor transactions of suspicious nature.',
+        details: [
+          'Verify customer identity',
+          'Collect and validate KYC documents',
+          'Assess customer risk profile',
+          'Monitor ongoing transactions'
+        ]
+      },
+      {
+        id: 2,
+        title: 'Risk Assessment',
+        icon: AlertTriangle,
+        content: 'REs shall carry out Money Laundering (ML) and Terrorist Financing (TF) Risk Assessment periodically to identify and assess ML/TF risks.',
+        details: [
+          'Periodic risk assessment',
+          'Risk categorization of customers',
+          'Enhanced due diligence for high-risk customers',
+          'Regular risk review and updates'
+        ]
+      },
+      {
+        id: 3,
+        title: 'Digital KYC',
+        icon: Shield,
+        content: 'REs can undertake live V-CIP (Video-based Customer Identification Process) to carry out customer identification remotely.',
+        details: [
+          'Video-based verification',
+          'Digital document verification',
+          'Biometric authentication',
+          'Secure data storage'
+        ]
+      },
+      {
+        id: 4,
+        title: 'Periodic Updates',
+        icon: Clock,
+        content: 'Periodic updation of KYC shall be carried out based on the risk category of customers.',
+        details: [
+          'High risk: Every 2 years',
+          'Medium risk: Every 8 years',
+          'Low risk: Every 10 years',
+          'Document re-verification process'
+        ]
+      }
+    ],
+
+    // AdviceCard translations
+    advice: {
+      loading: 'Loading advice...',
+      error: 'Error loading advice',
+      noAdvice: 'No advice available',
+      riskLevel: 'Risk',
+      timeframe: 'Timeframe',
+      interestRate: 'Interest Rate',
+      speakText: 'Listen to advice',
+      stopSpeaking: 'Stop speaking'
+    },
+
+    // Investment Categories translations
+    investmentCategories: {
+      aiAdvisory: "AI Investment Advisory",
+      stockMarket: "Stock Market",
+      bankingInvestment: "Banking Investment",
+      alternativeInvestments: "Alternative Investments"
+    },
+
+    // Pricing Structure translations
+    pricingStructure: {
+      title: "Service Pricing Structure",
+      subtitle: "Comprehensive overview of our service fees and specifications",
+      sections: {
+        financial: {
+          title: "Financial Transaction Services",
+          services: {
+            cashDeposit: {
+              category: "Cash Deposit",
+              fee: "₹75 + GST",
+              specifications: "Per transaction basis"
+            },
+            cashWithdrawal: {
+              category: "Cash Withdrawal",
+              fee: "₹75 + GST",
+              specifications: "Per transaction basis"
+            }
+          }
+        },
+        document: {
+          title: "Document Processing Services",
+          services: {
+            delivery: {
+              category: "Document Delivery",
+              fee: "₹75 + GST",
+              specifications: "Per visit basis"
+            },
+            accountOpening: {
+              category: "New Account Opening",
+              fee: "Free",
+              specifications: "Includes documentation assistance"
+            }
+          }
+        },
+        pensioner: {
+          title: "Life Certificate Services for Pensioners",
+          services: {
+            lifeCertificate: {
+              category: "Life Certificate Collection",
+              fee: "₹75 + GST",
+              specifications: [
+                "Physical verification at residence",
+                "Digital submission to authorities",
+                "Confirmation receipt provided",
+                "Annual or as per pension authority requirement"
+              ]
+            }
+          }
+        },
+        consultation: {
+          title: "Remote Consultation Services",
+          services: {
+            telephonic: {
+              category: "Telephonic Assistance",
+              fee: "Free",
+              specifications: [
+                "Standard business hours",
+                "General inquiries and support"
+              ]
+            },
+            videoCall: {
+              category: "Google Meet Consultation",
+              fee: "₹100 per session",
+              specifications: [
+                "Scheduled appointments",
+                "Specialized assistance",
+                "Documentation guidance"
+              ]
+            }
+          }
+        }
+      },
+      tableHeaders: {
+        category: "Service Category",
+        fee: "Service Fee",
+        specifications: "Specifications"
+      }
     }
   },
   hindi: {
@@ -275,18 +449,32 @@ export const translations = {
     timeframe: 'समय सीमा',
     noAdviceAvailable: 'कोई निवेश सलाह उपलब्ध नहीं है',
     
-    // Sidebar translations
-    home: 'होम',
-    userProfile: 'यूजर प्रोफाइल',
-    servicesOffered: 'बैंकिंग सेवाएं',
-    rbiGuidelines: 'आरबीआई दिशानिर्देश',
-    blogForum: 'ब्लॉग/फोरम',
-    pricingStructure: 'शुल्क संरचना',
-    trackService: 'सेवा ट्रैक करें',
-    trackTicket: 'टिकट ट्रैक करें',
-    support: 'सहायता',
-    shareFeedback: 'प्रतिक्रिया साझा करें',
-    helpImprove: 'हमारी सेवाओं को बेहतर बनाने में मदद करें',
+    // Navigation translations
+    navigation: {
+      home: 'होम',
+      userProfile: 'यूजर प्रोफाइल',
+      servicesOffered: 'बैंकिंग सेवाएं',
+      rbiGuidelines: 'आरबीआई दिशानिर्देश',
+      blogForum: 'ब्लॉग/फोरम',
+      pricingStructure: 'शुल्क संरचना',
+      trackService: 'सेवा ट्रैक करें',
+      trackTicket: 'टिकट ट्रैक करें',
+      support: 'सहायता',
+      shareFeedback: 'प्रतिक्रिया साझा करें',
+      helpImprove: 'हमारी सेवाओं को बेहतर बनाने में मदद करें'
+    },
+
+    // Service Tracking Section
+    tracking: {
+      service: {
+        title: 'सेवा ट्रैक करें',
+        description: 'अपनी सक्रिय सेवाओं की निगरानी करें और रीयल-टाइम स्थिति से अपडेट रहें'
+      },
+      ticket: {
+        title: 'टिकट ट्रैक करें',
+        description: 'अपने सपोर्ट टिकट को कुशलतापूर्वक चेक और प्रबंधित करें'
+      }
+    },
 
     // Chatbot translations
     chatbotTitle: 'सरल बॉट',
@@ -496,6 +684,165 @@ export const translations = {
       errors: {
         loginRequired: "टिकट बनाने के लिए कृपया लॉगिन करें",
         submitFailed: "टिकट बनाने में विफल"
+      }
+    },
+
+    // RBI Guidelines Page translations
+    rbiGuidelinesPage: {
+      downloadPDF: 'पीडीएफ डाउनलोड करें',
+      rbiWebsite: 'आरबीआई वेबसाइट',
+      masterDirectionTitle: 'मास्टर दिशानिर्देश – अपने ग्राहक को जानिए (केवाईसी) दिशानिर्देश, 2016',
+      masterDirectionDescription: 'ये दिशानिर्देश बैंकिंग विनियमन अधिनियम, 1949 की धारा 35ए और धन शोधन निवारण (अभिलेखों का रखरखाव) नियम, 2005 के नियम 7 के तहत जारी किए गए हैं।',
+      disclaimer: 'यह दिशानिर्देशों का सारांश है। पूर्ण विवरण के लिए कृपया आरबीआई के आधिकारिक दस्तावेज़ देखें।'
+    },
+    rbiGuidelinesData: [
+      {
+        id: 1,
+        title: 'ग्राहक उचित सावधानी (सीडीडी)',
+        icon: Users,
+        content: 'आरई को खाता-आधारित संबंध स्थापित करते समय ग्राहक उचित सावधानी करनी होगी और संदिग्ध प्रकृति के लेनदेन की निगरानी करनी होगी।',
+        details: [
+          'ग्राहक पहचान सत्यापित करें',
+          'केवाईसी दस्तावेजों को एकत्र और मान्य करें',
+          'ग्राहक जोखिम प्रोफाइल का आकलन करें',
+          'चल रहे लेनदेन की निगरानी करें'
+        ]
+      },
+      {
+        id: 2,
+        title: 'जोखिम मूल्यांकन',
+        icon: AlertTriangle,
+        content: 'आरई को धन शोधन (एमएल) और आतंकवादी वित्तपोषण (टीएफ) जोखिम मूल्यांकन समय-समय पर करना होगा।',
+        details: [
+          'आवधिक जोखिम मूल्यांकन',
+          'ग्राहकों का जोखिम वर्गीकरण',
+          'उच्च जोखिम वाले ग्राहकों के लिए वर्धित सावधानी',
+          'नियमित जोखिम समीक्षा और अपडेट'
+        ]
+      },
+      {
+        id: 3,
+        title: 'डिजिटल केवाईसी',
+        icon: Shield,
+        content: 'आरई दूरस्थ रूप से ग्राहक पहचान करने के लिए लाइव वी-सीआईपी (वीडियो-आधारित ग्राहक पहचान प्रक्रिया) कर सकते हैं।',
+        details: [
+          'वीडियो-आधारित सत्यापन',
+          'डिजिटल दस्तावेज़ सत्यापन',
+          'बायोमेट्रिक प्रमाणीकरण',
+          'सुरक्षित डेटा भंडारण'
+        ]
+      },
+      {
+        id: 4,
+        title: 'आवधिक अपडेट',
+        icon: Clock,
+        content: 'केवाईसी का आवधिक अपडेशन ग्राहकों की जोखिम श्रेणी के आधार पर किया जाएगा।',
+        details: [
+          'उच्च जोखिम: हर 2 साल',
+          'मध्यम जोखिम: हर 8 साल',
+          'निम्न जोखिम: हर 10 साल',
+          'दस्तावेज़ पुन: सत्यापन प्रक्रिया'
+        ]
+      }
+    ],
+
+    // AdviceCard translations
+    advice: {
+      loading: 'सलाह लोड हो रही है...',
+      error: 'सलाह लोड करने में त्रुटि',
+      noAdvice: 'कोई सलाह उपलब्ध नहीं है',
+      riskLevel: 'जोखिम',
+      timeframe: 'समय सीमा',
+      interestRate: 'ब्याज दर',
+      speakText: 'सलाह सुनें',
+      stopSpeaking: 'बोलना बंद करें'
+    },
+
+    // Investment Categories translations
+    investmentCategories: {
+      aiAdvisory: "एआई निवेश सलाहकार",
+      stockMarket: "शेयर बाजार",
+      bankingInvestment: "बैंकिंग निवेश",
+      alternativeInvestments: "वैकल्पिक निवेश"
+    },
+
+    // Pricing Structure translations in Hindi
+    pricingStructure: {
+      title: "सेवा मूल्य संरचना",
+      subtitle: "हमारी सेवा शुल्क और विनिर्देशों का व्यापक अवलोकन",
+      sections: {
+        financial: {
+          title: "वित्तीय लेनदेन सेवाएं",
+          services: {
+            cashDeposit: {
+              category: "नकद जमा",
+              fee: "₹75 + GST",
+              specifications: "प्रति लेनदेन आधार"
+            },
+            cashWithdrawal: {
+              category: "नकद निकासी",
+              fee: "₹75 + GST",
+              specifications: "प्रति लेनदेन आधार"
+            }
+          }
+        },
+        document: {
+          title: "दस्तावेज़ प्रसंस्करण सेवाएं",
+          services: {
+            delivery: {
+              category: "दस्तावेज़ वितरण",
+              fee: "₹75 + GST",
+              specifications: "प्रति विजिट आधार"
+            },
+            accountOpening: {
+              category: "नया खाता खोलना",
+              fee: "निःशुल्क",
+              specifications: "दस्तावेज़ सहायता शामिल है"
+            }
+          }
+        },
+        pensioner: {
+          title: "पेंशनर्स के लिए जीवन प्रमाणपत्र सेवाएं",
+          services: {
+            lifeCertificate: {
+              category: "जीवन प्रमाणपत्र संग्रह",
+              fee: "₹75 + GST",
+              specifications: [
+                "निवास पर भौतिक सत्यापन",
+                "प्राधिकरण को डिजिटल प्रस्तुति",
+                "पुष्टि रसीद प्रदान की जाती है",
+                "वार्षिक या पेंशन प्राधिकरण की आवश्यकता के अनुसार"
+              ]
+            }
+          }
+        },
+        consultation: {
+          title: "दूरस्थ परामर्श सेवाएं",
+          services: {
+            telephonic: {
+              category: "टेलीफोनिक सहायता",
+              fee: "निःशुल्क",
+              specifications: [
+                "मानक कार्य घंटे",
+                "सामान्य पूछताछ और सहायता"
+              ]
+            },
+            videoCall: {
+              category: "गूगल मीट परामर्श",
+              fee: "₹100 प्रति सत्र",
+              specifications: [
+                "निर्धारित अपॉइंटमेंट",
+                "विशेष सहायता",
+                "दस्तावेज़ मार्गदर्शन"
+              ]
+            }
+          }
+        }
+      },
+      tableHeaders: {
+        category: "सेवा श्रेणी",
+        fee: "सेवा शुल्क",
+        specifications: "विनिर्देश"
       }
     }
   }

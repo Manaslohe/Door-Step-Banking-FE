@@ -32,12 +32,12 @@ const SuccessModal = ({ isOpen, onClose, ticketInfo }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-[fadeIn_0.2s_ease-in]">
-      <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-xl animate-[slideUp_0.3s_ease-out]">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-xl">
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-2">
             <CheckCircle className="w-6 h-6 text-green-500" />
-            <h3 className="text-xl font-semibold text-gray-900">{t.support.success.title}</h3>
+            <h3 className="text-xl font-semibold text-gray-900">{t.supportSection.success.title}</h3>
           </div>
           <button 
             onClick={onClose} 

@@ -15,15 +15,15 @@ const Sidebar = ({ isOpen, isMinimized, isMobile, toggleSidebar }) => {
   const [showFeedback, setShowFeedback] = useState(false);
   
   const navItems = [
-    { path: '/dashboard', icon: Home, text: t.menu.home },
-    { path: '/user-dashboard', icon: Users, text: t.menu.userProfile },
-    { path: '/services-offered', icon: Settings, text: t.menu.bankingServices },
-    { path: '/rbi-guidelines', icon: BookOpen, text: t.menu.rbiGuidelines },
-    { path: '/blog-forum', icon: MessageSquare, text: t.menu.blogForum },
-    { path: '/pricing-structure', icon: DollarSign, text: t.menu.pricing },
-    { path: '/track-service', icon: Clock, text: t.menu.trackService },
-    { path: '/track-ticket', icon: FileText, text: t.menu.trackTicket },
-    { path: '/support', icon: HelpCircle, text: t.menu.support },
+    { path: '/dashboard', icon: Home, text: t.navigation.home },
+    { path: '/user-dashboard', icon: Users, text: t.navigation.userProfile },
+    { path: '/services-offered', icon: Settings, text: t.navigation.servicesOffered },
+    { path: '/rbi-guidelines', icon: BookOpen, text: t.navigation.rbiGuidelines },
+    { path: '/blog-forum', icon: MessageSquare, text: t.navigation.blogForum },
+    { path: '/pricing-structure', icon: DollarSign, text: t.navigation.pricingStructure },
+    { path: '/track-service', icon: Clock, text: t.tracking.service.title },
+    { path: '/track-ticket', icon: FileText, text: t.tracking.ticket.title },
+    { path: '/support', icon: HelpCircle, text: t.navigation.support }
   ];
 
   // Mobile-only: Hide completely when closed
@@ -80,7 +80,7 @@ const Sidebar = ({ isOpen, isMinimized, isMobile, toggleSidebar }) => {
               </div>
               {(!isMinimized || isMobile) && (
                 <span className="text-2xl font-bold text-white/90">
-                  Saral Bank
+                  Saral Banking
                 </span>
               )}
             </div>

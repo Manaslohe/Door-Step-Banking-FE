@@ -185,7 +185,7 @@ const TrackService = () => {
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900">
-            {userData.userType === 'ADMIN' ? t.serviceTracking.title.admin : t.serviceTracking.title.user}
+            {userData.userType === 'ADMIN' ? t.tracking.service.title : t.tracking.service.description}
           </h1>
           <button
             onClick={refreshServices}

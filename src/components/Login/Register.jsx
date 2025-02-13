@@ -8,6 +8,7 @@ import KycVerificationForm from './KycVerificationForm';
 import { registerCustomer } from '../../services/api';
 import imageCompression from 'browser-image-compression';
 import { auth } from '../../utils/auth';
+import Toast from '../Admin/Toast';
 
 // New PersonalDetailsForm component
 const PersonalDetailsForm = React.memo(({ 
@@ -157,12 +158,27 @@ export default function Register() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [toast, setToast] = useState({
+    show: false,
+    message: '',
+    type: 'error'
+  });
+
+  const showToast = (message, type = 'error') => {
+    setToast({
+      show: true,
+      message,
+      type
+    });
+    setTimeout(() => {
+      setToast(prev => ({ ...prev, show: false }));
+    }, 5000);
+  };
 
   const handlePhotoChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
       try {
-        // Compress image before upload
         const options = {
           maxSizeMB: 1,
           maxWidthOrHeight: 800,
@@ -173,7 +189,7 @@ export default function Register() {
         
         const reader = new FileReader();
         reader.onloadend = () => {
-          if (reader.result.length > 2000000) { // 2MB in base64
+          if (reader.result.length > 2000000) {
             setError('Image size too large. Please choose a smaller image.');
             return;
           }
@@ -195,7 +211,6 @@ export default function Register() {
     
     let finalValue = value;
     
-    // Simple input validation
     if (name === 'phone') {
       finalValue = value.replace(/\D/g, '').slice(0, 10);
     }
@@ -219,24 +234,42 @@ export default function Register() {
 
     try {
       if (!formData.firstName || !formData.email || !formData.phone) {
+        showToast('Please fill in all required fields');
         throw new Error('Please fill in all required fields');
       }
 
-      // Add photo validation
       if (photoPreview && !formData.photoUrl) {
+        showToast('Error processing photo. Please try uploading again.');
         throw new Error('Error processing photo. Please try uploading again.');
       }
 
       const response = await registerCustomer(formData);
       
       if (response && response.user) {
-        // Use auth utility instead of direct localStorage
         auth.setAuth(response.token, response.user);
         setShowConsent(true);
       } else {
+        showToast(response?.message || 'Registration failed');
         throw new Error(response?.message || 'Registration failed');
       }
     } catch (err) {
+      if (err.response?.data?.message) {
+        const errorMessage = err.response.data.message;
+        if (errorMessage.includes('email')) {
+          showToast('This email address is already registered');
+        } else if (errorMessage.includes('phone')) {
+          showToast('This phone number is already registered');
+        } else if (errorMessage.includes('aadhaar')) {
+          showToast('This Aadhaar number is already registered');
+        } else if (errorMessage.includes('pan')) {
+          showToast('This PAN number is already registered');
+        } else {
+          showToast(errorMessage);
+        }
+      } else {
+        showToast(err.message || 'An error occurred during registration');
+      }
+      setError(err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -333,6 +366,13 @@ export default function Register() {
         )}
       </div>
       {showSuccess && <SuccessAnimation onComplete={handleLoginRedirect} />}
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(prev => ({ ...prev, show: false }))}
+        />
+      )}
     </>
   );
 }

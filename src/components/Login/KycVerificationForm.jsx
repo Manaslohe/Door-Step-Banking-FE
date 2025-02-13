@@ -8,137 +8,158 @@ const KycVerificationForm = ({ onComplete }) => {
     const [phoneVerified, setPhoneVerified] = useState(false);
 
     const handleComplete = () => {
-      onComplete();
+        onComplete();
     };
 
     return (
-      <div className="space-y-8 animate-fadeIn">
-        <div className="space-y-6">
-          <h2 className="text-2xl font-bold text-gray-800">Verify Contact Details</h2>
-          
-          {/* Email Verification */}
-          <div className="bg-white p-6 rounded-xl border shadow-sm transition-all duration-200 hover:shadow-md">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="bg-blue-100 p-2 rounded-lg">
-                  <Mail className="w-6 h-6 text-blue-600" />
+        <div className="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-lg">
+            {/* Header with Aadhaar Logo */}
+            <div className="flex items-center justify-between border-b pb-4 mb-6">
+                <div className="flex items-center space-x-4">
+                    <img 
+                        src="/aadhaar.png" 
+                        alt="Aadhaar Logo" 
+                        className="h-12"
+                    />
+                    <div>
+                        <h2 className="text-xl font-bold text-[#1560BD]">Aadhaar Verification</h2>
+                        <p className="text-sm text-gray-600">Unique Identification Authority of India</p>
+                    </div>
                 </div>
-                <div>
-                  <p className="font-medium text-gray-800">Email Verification</p>
-                  <p className="text-sm text-gray-500">Verify your email address</p>
-                </div>
-              </div>
-              {!emailVerified && (
-                <button
-                  onClick={() => setShowEmailOtp(true)}
-                  className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium 
-                    hover:bg-blue-100 transition-colors active:scale-95 transform duration-100"
-                >
-                  Verify Email
-                </button>
-              )}
-              {emailVerified && (
-                <div className="flex items-center text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">
-                  <Check className="w-5 h-5 mr-1" />
-                  <span className="text-sm font-medium">Verified</span>
-                </div>
-              )}
             </div>
-            
-            {showEmailOtp && !emailVerified && (
-              <div className="animate-slideDown">
-                <div className="flex space-x-2">
-                  <input
-                    type="text"
-                    maxLength={6}
-                    placeholder="Enter OTP"
-                    className="w-full px-4 py-2 rounded-lg border focus:ring-2 
-                      focus:ring-blue-500 text-sm transition-all duration-200"
-                  />
-                  <button
-                    onClick={() => setEmailVerified(true)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm 
-                      hover:bg-blue-700 transition-colors flex-shrink-0"
-                  >
-                    Verify
-                  </button>
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  Enter the OTP sent to your email
-                </p>
-              </div>
-            )}
-          </div>
 
-          {/* Phone Verification */}
-          <div className="bg-white p-6 rounded-xl border shadow-sm transition-all duration-200 hover:shadow-md">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="bg-blue-100 p-2 rounded-lg">
-                  <Smartphone className="w-6 h-6 text-blue-600" />
+            <div className="space-y-6">
+                {/* Verification Instructions */}
+                <div className="bg-[#f8f9fa] p-4 rounded-lg border border-[#1560BD]/20">
+                    <p className="text-sm text-gray-700">
+                        Please verify your contact details as per your Aadhaar card
+                    </p>
                 </div>
-                <div>
-                  <p className="font-medium text-gray-800">Phone Verification</p>
-                  <p className="text-sm text-gray-500">Verify your phone number</p>
+
+                {/* Email Verification Panel */}
+                <div className="border rounded-lg p-5 bg-[#f8f9fa]">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-3">
+                            <div className="bg-[#1560BD] p-2 rounded-lg">
+                                <Mail className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                                <p className="font-medium text-[#1560BD]">ई-मेल पता / Email Address</p>
+                                <p className="text-sm text-gray-600">Verify your email address</p>
+                            </div>
+                        </div>
+                        {!emailVerified && (
+                            <button
+                                onClick={() => setShowEmailOtp(true)}
+                                className="px-4 py-2 bg-[#1560BD] text-white rounded-lg text-sm font-medium 
+                                    hover:bg-[#1151a3] transition-colors"
+                            >
+                                सत्यापित करें / Verify
+                            </button>
+                        )}
+                        {emailVerified && (
+                            <div className="flex items-center text-green-600 bg-green-50 px-3 py-1 rounded-lg">
+                                <Check className="w-5 h-5 mr-1" />
+                                <span className="text-sm font-medium">सत्यापित / Verified</span>
+                            </div>
+                        )}
+                    </div>
+                    
+                    {showEmailOtp && !emailVerified && (
+                        <div className="animate-slideDown">
+                            <div className="flex space-x-2">
+                                <input
+                                    type="text"
+                                    maxLength={6}
+                                    placeholder="Enter OTP / ओटीपी दर्ज करें"
+                                    className="w-full px-4 py-2 rounded-lg border focus:ring-2 
+                                        focus:ring-[#1560BD] text-sm"
+                                />
+                                <button
+                                    onClick={() => setEmailVerified(true)}
+                                    className="px-4 py-2 bg-[#1560BD] text-white rounded-lg text-sm 
+                                        hover:bg-[#1151a3] transition-colors"
+                                >
+                                    जमा करें / Submit
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
-              </div>
-              {!phoneVerified && (
-                <button
-                  onClick={() => setShowPhoneOtp(true)}
-                  className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium 
-                    hover:bg-blue-100 transition-colors active:scale-95 transform duration-100"
-                >
-                  Verify Phone
-                </button>
-              )}
-              {phoneVerified && (
-                <div className="flex items-center text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">
-                  <Check className="w-5 h-5 mr-1" />
-                  <span className="text-sm font-medium">Verified</span>
+
+                {/* Phone Verification Panel */}
+                <div className="border rounded-lg p-5 bg-[#f8f9fa]">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-3">
+                            <div className="bg-[#1560BD] p-2 rounded-lg">
+                                <Smartphone className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                                <p className="font-medium text-[#1560BD]">मोबाइल नंबर / Mobile Number</p>
+                                <p className="text-sm text-gray-600">Verify your phone number</p>
+                            </div>
+                        </div>
+                        {!phoneVerified && (
+                            <button
+                                onClick={() => setShowPhoneOtp(true)}
+                                className="px-4 py-2 bg-[#1560BD] text-white rounded-lg text-sm font-medium 
+                                    hover:bg-[#1151a3] transition-colors"
+                            >
+                                सत्यापित करें / Verify
+                            </button>
+                        )}
+                        {phoneVerified && (
+                            <div className="flex items-center text-green-600 bg-green-50 px-3 py-1 rounded-lg">
+                                <Check className="w-5 h-5 mr-1" />
+                                <span className="text-sm font-medium">सत्यापित / Verified</span>
+                            </div>
+                        )}
+                    </div>
+                    
+                    {showPhoneOtp && !phoneVerified && (
+                        <div className="animate-slideDown">
+                            <div className="flex space-x-2">
+                                <input
+                                    type="text"
+                                    maxLength={6}
+                                    placeholder="Enter OTP / ओटीपी दर्ज करें"
+                                    className="w-full px-4 py-2 rounded-lg border focus:ring-2 
+                                        focus:ring-[#1560BD] text-sm"
+                                />
+                                <button
+                                    onClick={() => setPhoneVerified(true)}
+                                    className="px-4 py-2 bg-[#1560BD] text-white rounded-lg text-sm 
+                                        hover:bg-[#1151a3] transition-colors"
+                                >
+                                    जमा करें / Submit
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
-              )}
             </div>
-            
-            {showPhoneOtp && !phoneVerified && (
-              <div className="animate-slideDown">
-                <div className="flex space-x-2">
-                  <input
-                    type="text"
-                    maxLength={6}
-                    placeholder="Enter OTP"
-                    className="w-full px-4 py-2 rounded-lg border focus:ring-2 
-                      focus:ring-blue-500 text-sm transition-all duration-200"
-                  />
-                  <button
-                    onClick={() => setPhoneVerified(true)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm 
-                      hover:bg-blue-700 transition-colors flex-shrink-0"
-                  >
-                    Verify
-                  </button>
+
+            {emailVerified && phoneVerified && (
+                <div className="mt-6 animate-fadeIn">
+                    <button 
+                        onClick={handleComplete}
+                        className="w-full bg-[#1560BD] text-white py-3 rounded-lg 
+                            hover:bg-[#1151a3] transition-all duration-200 flex 
+                            items-center justify-center space-x-2 text-sm font-medium"
+                    >
+                        <span>आगे बढ़ें / Proceed</span>
+                        <ChevronRight className="w-4 h-4" />
+                    </button>
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  Enter the OTP sent to your phone
-                </p>
-              </div>
             )}
-          </div>
+
+            {/* Footer */}
+            <div className="mt-8 pt-4 border-t">
+                <p className="text-xs text-center text-gray-500">
+                    © Unique Identification Authority of India, 2023
+                </p>
+            </div>
         </div>
-
-        {emailVerified && phoneVerified && (
-          <div className="animate-fadeIn">
-            <button 
-              onClick={handleComplete}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white 
-                py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all 
-                duration-200 flex items-center justify-center space-x-2 text-sm font-medium"
-            >
-              <span>Complete Registration</span>
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-      </div>
     );
 };
 
