@@ -292,13 +292,13 @@ const LandingPage = () => {
                 <img 
                   src={logo} 
                   alt="SaralBank Logo" 
-                  className="w-14 h-14 sm:w-20 sm:h-20 lg:w-24 lg:h-24 object-contain"
+                  className="w-14 h-14 sm:w-20 sm:h-20 lg:w-24 lg:h-20 pt-1 object-contain"
                   style={{ filter: 'invert(27%) sepia(97%) saturate(1742%) hue-rotate(206deg) brightness(97%) contrast(101%)' }}
                 />
               </div>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight">
                 <span className="bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-                  SaralBank
+                  Saral Banking
                 </span>
               </h1>
             </div>

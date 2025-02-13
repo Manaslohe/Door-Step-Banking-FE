@@ -110,20 +110,38 @@ const useServiceTracking = (serviceId = null) => {
 
   const fetchServices = async (userPhone, config) => {
     const baseUrl = getBaseUrl();
-    const { data } = await axios.get(`${baseUrl}/services`, {
-      ...config,
-      params: { 
-        userPhone,
-        includeDetails: true,
-        includeAssignment: true,
-        includeHistory: true,
-        includeAgent: true
+    try {
+      // Check if admin token exists
+      const adminToken = localStorage.getItem('adminToken');
+      if (adminToken) {
+        // Fetch all services for admin
+        const { data } = await axios.get(`${baseUrl}/services/all`, {
+          headers: {
+            'Authorization': `Bearer ${adminToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        return data?.data || [];
       }
-    });
 
-    console.log('Raw API response:', data); // Debug log
-    const services = data?.services || data?.data || [];
-    return services.map(formatServiceData);
+      // Regular user service fetch
+      const { data } = await axios.get(`${baseUrl}/services`, {
+        ...config,
+        params: { 
+          userPhone,
+          includeDetails: true,
+          includeAssignment: true,
+          includeHistory: true,
+          includeAgent: true
+        }
+      });
+
+      const services = data?.services || data?.data || [];
+      return services.map(formatServiceData);
+    } catch (error) {
+      console.error('Error fetching services:', error);
+      throw error;
+    }
   };
 
   useEffect(() => {
