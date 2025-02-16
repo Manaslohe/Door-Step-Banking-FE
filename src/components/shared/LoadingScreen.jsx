@@ -43,7 +43,7 @@ const LoadingScreen = () => {
           transition={{ delay: 0.3 }}
           className="text-3xl font-bold mt-6 bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent"
         >
-          SaralBank
+          Saral Banking
         </motion.h1>
 
         {/* Loading dots */}

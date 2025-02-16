@@ -59,20 +59,18 @@ const LifeCertificate = () => {
         throw new Error('Pension Account Number is required');
       }
 
+      // Simplified request data structure
       const requestData = {
-        serviceType: 'LIFE_CERTIFICATE',
         phone: user.phone,
-        userPhone: user.phone,
-        contactNo: user.phone,
-        bankAccount: formData.pensionAccountNo,
-        timeSlot: formData.slot,
         date: formData.date,
+        timeSlot: formData.slot,  // Note: matching the field name from form
         address: formData.address,
+        pensionAccountNo: formData.pensionAccountNo,
         bank: formData.bank,
-        pensionAccountNo: formData.pensionAccountNo, // Add this explicitly
-        bankName: formData.bank
+        description: `Life Certificate verification for pension account ${formData.pensionAccountNo}`
       };
 
+      console.log('Submitting life certificate request:', requestData);
       await createServiceRequest('LIFE_CERTIFICATE', requestData);
       setShowOtpPopup(false);
       setShowSuccess(true);

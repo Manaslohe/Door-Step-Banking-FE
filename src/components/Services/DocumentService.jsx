@@ -14,6 +14,15 @@ const DocumentService = () => {
   const { user } = useUser();
   const [selectedService, setSelectedService] = useState('collect');
   
+  // Add document type options
+  const documentTypes = [
+    { value: 'general', label: 'General Documents' },
+    { value: 'kyc', label: 'KYC Documents' },
+    { value: 'statement', label: 'Bank Statements' },
+    { value: 'checkbook', label: 'Checkbook/Cards' },
+    { value: 'other', label: 'Other Documents' }
+  ];
+
   const [formData, setFormData] = useState({
     collectionAddress: '',
     deliveryAddress: '',
@@ -21,7 +30,7 @@ const DocumentService = () => {
     timeSlot: '',
     contactNumber: '',
     bankAccount: '',
-    documentType: 'general', // Add default document type
+    documentType: 'general', // Set default document type
   });
 
   const bankAccounts = linkedBankAccounts;
@@ -77,6 +86,7 @@ const DocumentService = () => {
     setShowOtpPopup(true);
   };
 
+  // Update handleOtpVerification to include documentType
   const handleOtpVerification = async () => {
     try {
       if (!user?.phone) {
@@ -84,28 +94,26 @@ const DocumentService = () => {
       }
 
       const serviceType = selectedService === 'collect' ? 'DOCUMENT_COLLECTION' : 'DOCUMENT_DELIVERY';
+      const selectedAccount = bankAccounts.find(acc => acc.id === formData.bankAccount);
       
-      // Ensure phone number is included in the request
+      // Simplified request structure - all fields at root level
       const requestData = {
         serviceType,
-        phone: user.phone, // Add phone number explicitly
-        bankAccount: formData.bankAccount,
+        phone: user.phone,
         date: formData.date,
         timeSlot: formData.timeSlot,
-        address: selectedService === 'collect' ? formData.collectionAddress : formData.deliveryAddress,
+        bankAccount: formData.bankAccount,
         documentType: formData.documentType || 'general',
-        bank: formData.bank,
-        ifscCode: formData.ifscCode
+        address: selectedService === 'collect' ? formData.collectionAddress : formData.deliveryAddress,
+        bank: selectedAccount?.fullName || 'N/A',
+        ifscCode: selectedAccount?.ifsc || 'N/A',
+        description: `Document ${selectedService} request - ${formData.documentType} documents`
       };
 
-      const response = await createServiceRequest(requestData);
-      
-      if (response.success) {
-        setShowOtpPopup(false);
-        setShowSuccess(true);
-      } else {
-        throw new Error(response.message || 'Failed to create service request');
-      }
+      console.log('Submitting document request:', requestData);
+      await createServiceRequest(serviceType, requestData);
+      setShowOtpPopup(false);
+      setShowSuccess(true);
     } catch (error) {
       console.error('Error creating service request:', error);
       alert(error.message || 'Failed to create service request');
@@ -248,6 +256,29 @@ const DocumentService = () => {
                       {bankAccounts.map(acc => (
                         <option key={acc.id} value={acc.id}>
                           {acc.fullName} - {acc.accountNo}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Document Type Selection */}
+                <div className="md:col-span-2">
+                  <label className="block text-base font-medium text-gray-700 mb-2">
+                    Document Type
+                  </label>
+                  <div className="relative">
+                    <FileText className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <select
+                      name="documentType"
+                      value={formData.documentType}
+                      onChange={handleInputChange}
+                      className="w-full pl-10 p-3.5 text-base border rounded-lg focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
+                      required
+                    >
+                      {documentTypes.map(type => (
+                        <option key={type.value} value={type.value}>
+                          {type.label}
                         </option>
                       ))}
                     </select>

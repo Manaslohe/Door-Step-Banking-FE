@@ -65,24 +65,32 @@ const NewAccount = () => {
         throw new Error('User phone number not found');
       }
 
+      // Check for required fields
+      if (!formData.bankId || !formData.accountType) {
+        throw new Error('Bank and Account Type are required');
+      }
+
       const selectedBank = banksList.find(b => b.id === formData.bankId);
+      
+      // Match the structure expected by useServiceRequest
       const requestData = {
-        phone: user.phone,
-        date: formData.visitDate,
-        formData: {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
+        phone: user.phone,  // Required at top level
+        date: formData.visitDate,  // Required at top level
+        formData: {  // Nest service-specific data under formData
+          serviceType: 'NEW_ACCOUNT',
           bankId: formData.bankId,
           accountType: formData.accountType,
-          date: formData.visitDate,
           timeSlot: formData.timeSlot,
-          address: formData.address,
-          description: `New ${formData.accountType} account opening request at ${selectedBank?.name}`,
-          // Do not include bankAccount for NEW_ACCOUNT
+          address: formData.address || 'N/A',
+          firstName: formData.firstName || 'N/A',
+          lastName: formData.lastName || 'N/A',
+          email: formData.email || 'N/A',
+          bankName: selectedBank?.name || 'N/A',
+          description: `New ${formData.accountType} account opening request at ${selectedBank?.name || 'selected bank'}`
         }
       };
 
+      console.log('Submitting request:', requestData); // Debug log
       await createServiceRequest('NEW_ACCOUNT', requestData);
       setShowOtpPopup(false);
       setShowSuccess(true);

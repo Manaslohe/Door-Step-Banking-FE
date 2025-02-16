@@ -46,11 +46,11 @@ export const translations = {
     tracking: {
       service: {
         title: 'Track Service',
-        description: 'Monitor your active services and stay updated with real-time status'
+       
       },
       ticket: {
         title: 'Track Ticket',
-        description: 'Check and manage your support tickets efficiently'
+      
       }
     },
 
@@ -467,12 +467,10 @@ export const translations = {
     // Service Tracking Section
     tracking: {
       service: {
-        title: 'सेवा ट्रैक करें',
-        description: 'अपनी सक्रिय सेवाओं की निगरानी करें और रीयल-टाइम स्थिति से अपडेट रहें'
+        title: 'सेवा ट्रैक करें',        
       },
       ticket: {
         title: 'टिकट ट्रैक करें',
-        description: 'अपने सपोर्ट टिकट को कुशलतापूर्वक चेक और प्रबंधित करें'
       }
     },
 
