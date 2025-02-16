@@ -8,6 +8,8 @@ import SuccessPage from '../Common/SuccessPage';
 import { useServiceRequest } from '../../hooks/useServiceRequest';
 import { linkedBankAccounts, standardTimeSlots } from '../../data/bankData';
 import { motion } from 'framer-motion';
+import { speak, parseDate, findBestMatch, parseTimeSlot } from '../../utils/voiceUtils';
+import VoiceAssistant from '../Common/VoiceAssistant';
 
 const LifeCertificate = () => {
   const navigate = useNavigate();
@@ -23,6 +25,7 @@ const LifeCertificate = () => {
   const [showOtpPopup, setShowOtpPopup] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const { createServiceRequest } = useServiceRequest();
+  const [activeField, setActiveField] = useState(null);
 
   // Add useEffect to update form data when user data is available
   useEffect(() => {
@@ -104,12 +107,98 @@ const LifeCertificate = () => {
     };
   };
 
+  const handleVoiceInput = async (voiceData) => {
+    const field = Object.keys(voiceData)[0];
+    let value = voiceData[field].toLowerCase();
+
+    let processedValue;
+    let feedbackMessage;
+
+    switch (field) {
+      case 'pensionAccountNo':
+        processedValue = value.replace(/[^0-9]/g, '');
+        if (processedValue) {
+          feedbackMessage = `Set pension account number to ${processedValue}`;
+        } else {
+          feedbackMessage = "I couldn't understand the account number. Please say the numbers clearly.";
+        }
+        break;
+
+      case 'phone':
+        processedValue = value.replace(/[^0-9]/g, '');
+        if (processedValue) {
+          feedbackMessage = `Set phone number to ${processedValue}`;
+        } else {
+          feedbackMessage = "I couldn't understand the phone number. Please say the digits clearly.";
+        }
+        break;
+
+      case 'bank':
+        const bankOptions = linkedBankAccounts.map(bank => ({
+          value: bank.bank,
+          label: bank.bank,
+          searchTerms: [bank.bank.toLowerCase(), `${bank.bank.toLowerCase()} bank`]
+        }));
+        
+        const matchedBank = findBestMatch(value, bankOptions);
+        if (matchedBank) {
+          processedValue = matchedBank.value;
+          feedbackMessage = `Selected ${matchedBank.value} bank`;
+        } else {
+          feedbackMessage = "Sorry, I couldn't find that bank. Please try again.";
+        }
+        break;
+
+      case 'date':
+        processedValue = parseDate(value);
+        if (processedValue) {
+          const date = new Date(processedValue);
+          feedbackMessage = `Set verification date to ${date.toLocaleDateString()}`;
+        } else {
+          feedbackMessage = "I couldn't understand the date. Please try again.";
+        }
+        break;
+
+      case 'slot':
+        const matchedTimeSlot = parseTimeSlot(value, standardTimeSlots);
+        if (matchedTimeSlot) {
+          processedValue = matchedTimeSlot;
+          feedbackMessage = `Set appointment time to ${matchedTimeSlot}`;
+        } else {
+          feedbackMessage = "I couldn't understand the time. Please say something like '9 AM' or '2 PM'";
+        }
+        break;
+
+      case 'address':
+        processedValue = value;
+        feedbackMessage = `Set collection address to ${value}`;
+        break;
+
+      default:
+        processedValue = value;
+        feedbackMessage = `Set ${field} to ${value}`;
+    }
+
+    if (processedValue) {
+      setFormData(prev => ({
+        ...prev,
+        [field]: processedValue
+      }));
+    }
+
+    await speak(feedbackMessage);
+  };
+
+  const handleFieldFocus = (fieldName) => {
+    setActiveField(fieldName);
+  };
+
   return (
     <DashboardLayout>
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="p-4 sm:p-6 md:p-2 min-h-[calc(100vh-80px)] overflow-y-auto bg-gray-50"
+        className="p-4 sm:p-6 md:p-2 min-h-[calc(90vh-90px)] overflow-y-auto bg-gray-50"
       >
         <div className="max-w-6xl mx-auto">
           <motion.div
@@ -117,6 +206,18 @@ const LifeCertificate = () => {
             animate={{ opacity: 1, y: 0 }}
             className="bg-white rounded-xl shadow-lg border mb-6"
           >
+            {/* Voice Assistant Header */}
+            <div className="flex items-center justify-between gap-4 p-4 border-b">
+              <h2 className="text-lg font-semibold">Life Certificate Verification</h2>
+              <VoiceAssistant 
+                onVoiceInput={handleVoiceInput}
+                activeField={activeField}
+                feedbackEnabled={true}
+                size="md"
+                serviceType="LIFE_CERTIFICATE"
+              />
+            </div>
+
             {/* Progress Steps */}
             <div className="grid grid-cols-3 border-b">
               {[
@@ -172,6 +273,7 @@ const LifeCertificate = () => {
                         name="pensionAccountNo"
                         value={formData.pensionAccountNo}
                         onChange={handleInputChange}
+                        onFocus={() => handleFieldFocus('pensionAccountNo')}
                         className="w-full pl-10 p-3 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         required
                       />
@@ -189,6 +291,7 @@ const LifeCertificate = () => {
                         name="phone"
                         value={formData.phone}
                         onChange={handleInputChange}
+                        onFocus={() => handleFieldFocus('phone')}
                         className="w-full pl-10 p-3 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         required
                       />
@@ -208,6 +311,7 @@ const LifeCertificate = () => {
                         name="bank"
                         value={formData.bank}
                         onChange={handleInputChange}
+                        onFocus={() => handleFieldFocus('bank')}
                         className="w-full pl-10 p-3 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none"
                         required
                       >
@@ -235,6 +339,7 @@ const LifeCertificate = () => {
                         name="date"
                         value={formData.date}
                         onChange={handleInputChange}
+                        onFocus={() => handleFieldFocus('date')}
                         className="w-full pl-10 p-3 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         required
                       />
@@ -251,6 +356,7 @@ const LifeCertificate = () => {
                         name="slot"
                         value={formData.slot}
                         onChange={handleInputChange}
+                        onFocus={() => handleFieldFocus('slot')}
                         className="w-full pl-10 p-3 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none"
                         required
                       >
@@ -272,6 +378,7 @@ const LifeCertificate = () => {
                         name="address"
                         value={formData.address}
                         onChange={handleInputChange}
+                        onFocus={() => handleFieldFocus('address')}
                         rows="3"
                         className="w-full pl-10 p-3 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         required

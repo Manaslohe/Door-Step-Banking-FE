@@ -1,303 +1,306 @@
 import React, { useState, useEffect } from 'react';
-import { Mic, Volume2, Square } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Mic, Volume2, Square, MicOff, VolumeX, HelpCircle, BookOpen } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import Toast from '../Admin/Toast';
+import { getServiceExplanation } from '../../utils/serviceDescriptions';
+import { speak } from '../../utils/voiceUtils'; // Add this import
 
-const serviceExplanations = {
-  CASH_DEPOSIT: `Welcome to the Cash Deposit service. This service allows you to schedule a cash deposit 
-    pickup from your location. Our agent will come to collect the cash and deposit it in your bank account. 
-    The process is secure and convenient. You'll need to provide your bank account details, 
-    pickup address, preferred date and time, and the amount you wish to deposit.`
-};
-
-const formFields = {
-  CASH_DEPOSIT: [
-    {
-      name: 'bankAccount',
-      type: 'select',
-      label: 'Bank Account',
-      prompt: 'Which bank account would you like to use?'
-    },
-    {
-      name: 'deliveryAddress',
-      type: 'text',
-      label: 'Delivery Address',
-      prompt: 'Please tell me the delivery address for cash pickup.'
-    },
-    {
-      name: 'date',
-      type: 'date',
-      label: 'Pickup Date',
-      prompt: 'What date would you like for the pickup?'
-    },
-    {
-      name: 'timeSlot',
-      type: 'select',
-      label: 'Time Slot',
-      prompt: 'Which time slot do you prefer? You can say the time or the slot number.'
-    },
-    {
-      name: 'amount',
-      type: 'number',
-      label: 'Amount',
-      prompt: 'How much cash would you like to deposit?'
-    }
-  ]
-};
-
-const VoiceAssistant = ({ 
-  service, 
-  onVoiceInput, 
-  formRefs = {}, 
-  options = {}, 
-  onFieldFocus,
-  formData
+// Internal Button Component
+const VoiceControlButton = ({ 
+  type = 'input',
+  isActive = false,
+  onClick,
+  className = '',
+  size = 'md',
+  isProcessing = false,
 }) => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [currentFieldIndex, setCurrentFieldIndex] = useState(-1);
-  const [isGuiding, setIsGuiding] = useState(false);
+  const sizeClasses = {
+    sm: 'p-2',
+    md: 'p-3',
+    lg: 'p-4'
+  };
 
-  const stopAll = () => {
+  const iconSizes = {
+    sm: 16,
+    md: 20,
+    lg: 24
+  };
+
+  const getIcon = () => {
+    switch (type) {
+      case 'input':
+        return isActive ? <Square size={iconSizes[size]} /> : <Mic size={iconSizes[size]} />;
+      case 'feedback':
+        return isActive ? <Volume2 size={iconSizes[size]} /> : <VolumeX size={iconSizes[size]} />;
+      case 'explain':
+        return isActive ? <BookOpen size={iconSizes[size]} /> : <HelpCircle size={iconSizes[size]} />;
+      default:
+        return null;
+    }
+  };
+
+  const getColors = () => {
+    switch (type) {
+      case 'input':
+        return isActive 
+          ? 'bg-red-500 hover:bg-red-600 ring-red-300' 
+          : 'bg-blue-500 hover:bg-blue-600 ring-blue-300';
+      case 'feedback':
+        return isActive 
+          ? 'bg-emerald-500 hover:bg-emerald-600 ring-emerald-300' 
+          : 'bg-slate-500 hover:bg-slate-600 ring-slate-300';
+      case 'explain':
+        return isActive 
+          ? 'bg-purple-500 hover:bg-purple-600 ring-purple-300' 
+          : 'bg-indigo-500 hover:bg-indigo-600 ring-indigo-300';
+      default:
+        return '';
+    }
+  };
+
+  return (
+    <motion.button
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      onClick={onClick}
+      className={`
+        ${sizeClasses[size]} 
+        rounded-full 
+        ${getColors()}
+        text-white 
+        shadow-lg 
+        transition-all
+        duration-200
+        relative
+        ring-2
+        ring-opacity-50
+        ${isActive ? 'ring-4' : 'ring-0'}
+        ${className}
+      `}
+      title={`${isActive ? 'Stop' : 'Start'} voice ${type}`}
+    >
+      <AnimatePresence>
+        {isProcessing && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 rounded-full bg-current opacity-20"
+            style={{
+              animation: 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+            }}
+          />
+        )}
+      </AnimatePresence>
+      {getIcon()}
+    </motion.button>
+  );
+};
+
+// Main VoiceAssistant Component
+const VoiceAssistant = ({ 
+  onVoiceInput, 
+  activeField,
+  feedbackEnabled = true,
+  size = 'md',
+  serviceType = 'CASH_DEPOSIT' // Add serviceType prop
+}) => {
+  const [isListening, setIsListening] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [voiceFeedback, setVoiceFeedback] = useState(true);
+  const [toast, setToast] = useState(null);
+  const [isExplaining, setIsExplaining] = useState(false);
+
+  useEffect(() => {
+    // Clean up any active speech or recognition on unmount
+    return () => {
+      stopEverything();
+    };
+  }, []);
+
+  const stopEverything = async () => {
+    // Stop speech recognition
     if (window.recognition) {
       window.recognition.abort();
     }
-    window.speechSynthesis?.cancel();
-    setIsPlaying(false);
+    // Stop any ongoing speech immediately
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
     setIsListening(false);
-    setIsGuiding(false);
-    setCurrentFieldIndex(-1);
+    setIsProcessing(false);
+    setIsExplaining(false);
+
+    // Ensure all states are reset
+    await new Promise(resolve => setTimeout(resolve, 50));
   };
 
-  const speak = (text, onEndCallback) => {
-    if (!window.speechSynthesis) return;
-    
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.onend = () => {
-      setIsPlaying(false);
-      if (onEndCallback) onEndCallback();
-    };
-    setIsPlaying(true);
-    window.speechSynthesis.speak(utterance);
+  const showToast = (message, type = 'error') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000); // Auto hide after 3 seconds
   };
 
-  const explainService = () => {
-    if (isPlaying || isListening) {
-      stopAll();
-    } else {
-      speak(serviceExplanations[service]);
-    }
-  };
-
-  const findNextEmptyField = (startIndex = 0) => {
-    const fields = formFields[service];
-    for (let i = startIndex; i < fields.length; i++) {
-      const field = fields[i];
-      if (!formData[field.name] || formData[field.name] === '') {
-        return i;
-      }
-    }
-    return -1; // All fields are filled
-  };
-
-  const processNextField = (fieldIndex) => {
-    const fields = formFields[service];
-    
-    // Find next empty field
-    const nextEmptyIndex = findNextEmptyField(fieldIndex);
-    
-    if (nextEmptyIndex === -1) {
-      speak("Great! All fields are filled. You can now submit the form.");
-      stopAll();
+  const startListening = () => {
+    if (!window.webkitSpeechRecognition) {
+      showToast('Speech recognition is not supported in your browser.', 'error');
       return;
     }
 
-    const field = fields[nextEmptyIndex];
-    setCurrentFieldIndex(nextEmptyIndex);
-    
-    if (onFieldFocus) {
-      onFieldFocus(field.name);
-    }
-
-    if (field.type === 'select' && formRefs[field.name]?.current) {
-      formRefs[field.name].current.focus();
-      setTimeout(() => simulateSelectClick(formRefs[field.name]), 300);
-    }
-
-    speak(field.prompt, () => startListeningForField(field));
-  };
-
-  const startGuidedInput = () => {
-    if (isListening || isGuiding) {
-      stopAll();
-    } else {
-      setIsGuiding(true);
-      const firstEmptyIndex = findNextEmptyField(0);
-      if (firstEmptyIndex === -1) {
-        speak("All fields are already filled. You can now submit the form.");
-        return;
-      }
-      processNextField(firstEmptyIndex);
-    }
-  };
-
-  const simulateSelectClick = (selectRef) => {
-    if (!selectRef?.current) return;
-    
-    // Force open the select dropdown
-    selectRef.current.click();
-    selectRef.current.focus();
-    
-    // Dispatch multiple events to ensure dropdown opens
-    ['mousedown', 'mouseup', 'click'].forEach(eventType => {
-      const event = new MouseEvent(eventType, {
-        view: window,
-        bubbles: true,
-        cancelable: true
-      });
-      selectRef.current.dispatchEvent(event);
-    });
-  };
-
-  const startListeningForField = (field) => {
-    if (!window.webkitSpeechRecognition) {
-      alert('Speech recognition is not supported in your browser.');
+    if (!activeField) {
+      showToast('Please click on an input field first', 'warning');
       return;
     }
 
     const recognition = new window.webkitSpeechRecognition();
-    window.recognition = recognition; // Store reference for stopAll
+    window.recognition = recognition;
     recognition.continuous = false;
     recognition.interimResults = false;
 
-    recognition.onstart = () => setIsListening(true);
+    recognition.onstart = () => {
+      setIsListening(true);
+      setIsProcessing(true);
+    };
+
     recognition.onend = () => {
       setIsListening(false);
+      setIsProcessing(false);
       window.recognition = null;
     };
+
     recognition.onerror = () => {
       setIsListening(false);
+      setIsProcessing(false);
       window.recognition = null;
     };
 
     recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript.toLowerCase();
-      parseFieldInput(field, transcript);
+      const transcript = event.results[0][0].transcript;
+      const voiceData = { [activeField || 'command']: transcript };
+      onVoiceInput(voiceData);
     };
 
     recognition.start();
   };
 
-  const moveToNextField = () => {
-    const nextEmpty = findNextEmptyField(currentFieldIndex + 1);
-    if (nextEmpty !== -1) {
-      setTimeout(() => processNextField(nextEmpty), 1000);
+  const toggleListening = () => {
+    if (isListening) {
+      stopEverything();
     } else {
-      speak("All fields are now filled. You can submit the form.");
-      stopAll();
+      startListening();
     }
   };
 
-  const handleFieldCompletion = (voiceData, successMessage) => {
-    onVoiceInput(voiceData);
-    speak(successMessage, moveToNextField);
+  const toggleVoiceFeedback = () => {
+    if (voiceFeedback) {
+      stopEverything();
+    }
+    setVoiceFeedback(!voiceFeedback);
+    localStorage.setItem('voiceFeedback', (!voiceFeedback).toString());
   };
 
-  const parseFieldInput = (field, transcript) => {
-    const voiceData = {};
-    const normalizedTranscript = transcript.toLowerCase().trim();
-
-    switch (field.type) {
-      case 'select':
-        if (field.name === 'bankAccount') {
-          const option = options[field.name]?.find(opt => {
-            if (normalizedTranscript.match(/^(\d+)$/)) {
-              const num = parseInt(normalizedTranscript) - 1;
-              return num === options[field.name].indexOf(opt);
-            }
-            return opt.searchTerms.some(term => 
-              normalizedTranscript.includes(term) ||
-              term.includes(normalizedTranscript)
-            );
-          });
-
-          if (option) {
-            voiceData[field.name] = option.value;
-            if (formRefs[field.name]?.current) {
-              formRefs[field.name].current.value = option.value;
-              formRefs[field.name].current.dispatchEvent(
-                new Event('change', { bubbles: true })
-              );
-            }
-            handleFieldCompletion(voiceData, `Selected ${option.label.split('-')[0].trim()}`);
-            return;
-          }
-        }
-        break;
-
-      case 'text':
-        voiceData[field.name] = transcript;
-        handleFieldCompletion(voiceData, `Got it! Set to ${transcript}`);
-        return;
-
-      case 'number':
-        const amount = transcript.replace(/[^0-9]/g, '');
-        if (amount) {
-          voiceData[field.name] = amount;
-          handleFieldCompletion(voiceData, `Amount set to ${amount}`);
-          return;
-        }
-        break;
-
-      case 'date':
-        const dateMatch = transcript.match(/(\d{1,2})(st|nd|rd|th)?\s+(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{4})/i);
-        if (dateMatch) {
-          const [_, day, __, month, year] = dateMatch;
-          const date = new Date(`${month} ${day}, ${year}`);
-          voiceData[field.name] = date.toISOString().split('T')[0];
-          handleFieldCompletion(voiceData, `Date set to ${month} ${day}, ${year}`);
-          return;
-        }
-        break;
+  const explainService = async () => {
+    if (isExplaining) {
+      await stopEverything();
+      return;
     }
 
-    speak(`I didn't catch that. Please try again.`, () => {
-      startListeningForField(field);
-    });
-  };
+    try {
+      setIsExplaining(true);
+      const explanation = getServiceExplanation(serviceType);
+      
+      if (!explanation) {
+        throw new Error('No explanation available for this service');
+      }
 
-  useEffect(() => {
-    return () => {
-      stopAll();
-    };
-  }, []);
+      await speak(explanation);
+    } catch (error) {
+      console.error('Explanation error:', error);
+      if (error.error === 'interrupted') {
+        await stopEverything();
+      } else {
+        showToast(error.message || 'Could not play service explanation', 'error');
+      }
+    } finally {
+      setIsExplaining(false);
+    }
+  };
 
   return (
-    <div className="flex items-center gap-3">
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={explainService}
-        className={`p-3 rounded-full ${
-          isPlaying ? 'bg-red-500' : 'bg-blue-500'
-        } text-white shadow-lg`}
-        title={isPlaying ? "Stop explanation" : "Listen to service explanation"}
-      >
-        {isPlaying ? <Square size={20} /> : <Volume2 size={20} />}
-      </motion.button>
-
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={startGuidedInput}
-        className={`p-3 rounded-full ${
-          isListening || isGuiding ? 'bg-red-500' : 'bg-blue-500'
-        } text-white shadow-lg`}
-        title={isListening || isGuiding ? "Stop voice input" : "Start guided voice input"}
-      >
-        <Mic size={20} />
-      </motion.button>
-    </div>
+    <>
+      <div className="flex items-center gap-3">
+        <div className="relative min-w-[40px]">
+          <VoiceControlButton
+            type="input"
+            isActive={isListening}
+            isProcessing={isProcessing}
+            onClick={toggleListening}
+            size={size}
+            className={activeField ? 'opacity-100' : 'opacity-50 cursor-not-allowed'}
+          />
+          <AnimatePresence>
+            {isListening && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-xs font-medium text-red-500 w-max"
+              >
+                Listening...
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+        {feedbackEnabled && (
+          <div className="relative min-w-[40px]">
+            <VoiceControlButton
+              type="feedback"
+              isActive={voiceFeedback}
+              onClick={toggleVoiceFeedback}
+              size={size}
+            />
+            <AnimatePresence>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-xs font-medium text-slate-500 w-max"
+              >
+                {voiceFeedback ? 'Feedback On' : 'Feedback Off'}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        )}
+        <div className="relative min-w-[40px]">
+          <VoiceControlButton
+            type="explain"
+            isActive={isExplaining}
+            onClick={explainService}
+            size={size}
+          />
+          <AnimatePresence>
+            {isExplaining && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-xs font-medium text-purple-500 w-max"
+              >
+                Explaining...
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+      <AnimatePresence>
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
+        )}
+      </AnimatePresence>
+    </>
   );
 };
 

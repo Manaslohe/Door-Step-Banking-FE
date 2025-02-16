@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { DollarSign, ArrowLeft, Clock, Calendar, MapPin, Building2, CreditCard, Mic, Volume2 } from 'lucide-react';
+import { DollarSign, ArrowLeft, Clock, Calendar, MapPin, Building2, CreditCard } from 'lucide-react';
 import DashboardLayout from '../Dashboard/DashboardLayout'; // Add this import
 import OtpVerificationPopup from '../Common/OtpVerificationPopup';
 import SuccessPage from '../Common/SuccessPage';
@@ -9,6 +9,7 @@ import { useServiceRequest } from '../../hooks/useServiceRequest';
 import { linkedBankAccounts, standardTimeSlots } from '../../data/bankData';
 import { motion } from 'framer-motion';
 import { formatDateForBackend } from '../../utils/dateUtils';
+import { speak, parseDate, findBestMatch, parseTimeSlot } from '../../utils/voiceUtils';
 import VoiceAssistant from '../Common/VoiceAssistant';
 
 const CashDeposit = () => {
@@ -29,82 +30,19 @@ const CashDeposit = () => {
   const bankAccounts = linkedBankAccounts;
   const [showOtpPopup, setShowOtpPopup] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [isListening, setIsListening] = useState(false);
   const [activeField, setActiveField] = useState(null);
-  
-  // Create refs for form fields
-  const formRefs = {
-    bankAccount: React.useRef(),
-    deliveryAddress: React.useRef(),
-    date: React.useRef(),
-    timeSlot: React.useRef(),
-    amount: React.useRef()
-  };
-
-  // Enhanced dropdown options with more search-friendly labels
-  const dropdownOptions = {
-    bankAccount: bankAccounts.map((acc, index) => ({
-      value: acc.id,
-      label: `${acc.bank} - ${acc.accountNo}`,
-      searchTerms: [
-        acc.bank.toLowerCase(),
-        acc.accountNo,
-        `${acc.bank.toLowerCase()} account`,
-        `account ${index + 1}`,
-        acc.accountNo.slice(-4)
-      ]
-    })),
-    timeSlot: standardTimeSlots.map(slot => ({
-      value: slot,
-      label: slot,
-      searchTerms: [slot.toLowerCase(), slot.replace(':', ' ')]
-    }))
-  };
-
-  const handleFieldFocus = (fieldName) => {
-    setActiveField(fieldName);
-    formRefs[fieldName]?.current?.focus();
-  };
 
   const handleInputChange = (e) => {
     if (e.target.name === 'bankAccount') {
       const selectedAccount = bankAccounts.find(acc => acc.id === e.target.value);
-      if (selectedAccount) {
-        setFormData(prev => ({
-          ...prev,
-          bankAccount: e.target.value,
-          ifscCode: selectedAccount.ifsc,
-          accountNo: selectedAccount.accountNo // Add account number if needed
-        }));
-      }
+      setFormData({
+        ...formData,
+        bankAccount: e.target.value,
+        ifscCode: selectedAccount ? selectedAccount.ifsc : '',
+      });
     } else {
-      setFormData(prev => ({
-        ...prev,
-        [e.target.name]: e.target.value
-      }));
+      setFormData({ ...formData, [e.target.name]: e.target.value });
     }
-  };
-
-  const handleVoiceInput = (voiceData) => {
-    Object.entries(voiceData).forEach(([field, value]) => {
-      if (field === 'bankAccount') {
-        const selectedAccount = bankAccounts.find(acc => acc.id === value);
-        if (selectedAccount) {
-          setFormData(prev => ({
-            ...prev,
-            bankAccount: value,
-            ifscCode: selectedAccount.ifsc,
-            accountNo: selectedAccount.accountNo
-          }));
-          return;
-        }
-      }
-      
-      setFormData(prev => ({
-        ...prev,
-        [field]: value
-      }));
-    });
   };
 
   const handleSubmit = async (e) => {
@@ -159,44 +97,120 @@ const CashDeposit = () => {
     return progress;
   };
 
-  // Custom click handler for select elements
-  const handleSelectClick = (name) => {
-    if (formRefs[name]?.current) {
-      formRefs[name].current.click();
-      formRefs[name].current.focus();
+  const handleVoiceInput = async (voiceData) => {
+    const field = Object.keys(voiceData)[0];
+    let value = voiceData[field].toLowerCase();
+
+    let processedValue;
+    let feedbackMessage;
+
+    switch (field) {
+      case 'bankAccount':
+        const bankOptions = bankAccounts.map(acc => ({
+          value: acc.id,
+          label: acc.bank,
+          searchTerms: [
+            acc.bank.toLowerCase(),
+            acc.accountNo,
+            `${acc.bank.toLowerCase()} account`,
+            acc.accountNo.slice(-4)
+          ]
+        }));
+        
+        const matchedBank = findBestMatch(value, bankOptions);
+        if (matchedBank) {
+          const selectedAccount = bankAccounts.find(acc => acc.id === matchedBank.value);
+          setFormData(prev => ({
+            ...prev,
+            bankAccount: matchedBank.value,
+            ifscCode: selectedAccount.ifsc,
+            accountNo: selectedAccount.accountNo
+          }));
+          feedbackMessage = `Selected ${selectedAccount.bank} account and set IFSC code`;
+        } else {
+          feedbackMessage = "Sorry, I couldn't find that bank account. Please try again.";
+        }
+        break;
+
+      case 'deliveryAddress':
+        processedValue = value;
+        feedbackMessage = `Set pickup address to ${value}`;
+        break;
+
+      case 'date':
+        processedValue = parseDate(value);
+        if (processedValue) {
+          const date = new Date(processedValue);
+          feedbackMessage = `Set pickup date to ${date.toLocaleDateString()}`;
+        } else {
+          feedbackMessage = "I couldn't understand the date. Please try again.";
+        }
+        break;
+
+      case 'timeSlot':
+        const matchedTimeSlot = parseTimeSlot(value, standardTimeSlots);
+        if (matchedTimeSlot) {
+          processedValue = matchedTimeSlot;
+          feedbackMessage = `Set time slot to ${matchedTimeSlot}`;
+          setFormData(prev => ({
+            ...prev,
+            timeSlot: matchedTimeSlot
+          }));
+        } else {
+          feedbackMessage = "I couldn't understand the time. Please try saying something like '9 AM' or '2 PM'";
+        }
+        break;
+
+      case 'amount':
+        const amountStr = value.replace(/[^0-9]/g, '');
+        if (amountStr) {
+          processedValue = amountStr;
+          feedbackMessage = `Set deposit amount to ${processedValue} rupees`;
+        } else {
+          feedbackMessage = "I couldn't understand the amount. Please say a number.";
+        }
+        break;
+
+      default:
+        processedValue = value;
+        feedbackMessage = `Set ${field} to ${value}`;
     }
+
+    if (processedValue) {
+      setFormData(prev => ({
+        ...prev,
+        [field]: processedValue
+      }));
+    }
+
+    await speak(feedbackMessage);
   };
 
-  // Update the form content JSX to include refs and highlighting
-  const getFieldClassName = (fieldName) => `
-    w-full p-3 sm:p-4 text-sm sm:text-base border rounded-lg 
-    focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-    ${activeField === fieldName ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50' : ''}
-  `;
+  const handleFieldFocus = (e) => {
+    setActiveField(e.target.name);
+  };
 
   return (
     <DashboardLayout>
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="p-4 sm:p-6 md:p-2 h-[calc(90vh-80px)] overflow-y-auto bg-gray-50"
+        className=" sm:p-6 md:p-2 h-[calc(95vh-90px)] overflow-y-auto bg-gray-50"
       >
         <div className="max-w-6xl mx-auto">
-          {/* Main Form Card - Removed header section with track button */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="bg-white rounded-xl shadow-lg border"
           >
-            {/* Add AI Assistant Controls */}
-            <div className="flex items-center justify-end gap-4 p-4 border-b">
-              <VoiceAssistant
-                service="CASH_DEPOSIT"
+            {/* Update Voice Assistant Section */}
+            <div className="flex items-center justify-between gap-4 p-4 border-b">
+              <h2 className="text-lg font-semibold">Cash Deposit Service</h2>
+              <VoiceAssistant 
                 onVoiceInput={handleVoiceInput}
-                formRefs={formRefs}
-                options={dropdownOptions}
-                onFieldFocus={handleFieldFocus}
-                formData={formData}
+                activeField={activeField}
+                feedbackEnabled={true}
+                size="md"
               />
             </div>
 
@@ -213,7 +227,7 @@ const CashDeposit = () => {
                   animate={{ 
                     backgroundColor: calculateProgress()[step.key] ? 'rgb(239, 246, 255)' : 'rgb(255, 255, 255)'
                   }}
-                  className={`p-3 sm:p-4 md:p-6 ${index !== 2 ? 'border-r' : ''}`}
+                  className={`p-3 sm:p-4 ${index !== 2 ? 'border-r' : ''}`}
                 >
                   <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
                     <motion.div
@@ -252,12 +266,11 @@ const CashDeposit = () => {
                     </label>
                     <select
                       name="bankAccount"
-                      ref={formRefs.bankAccount}
-                      className={getFieldClassName('bankAccount')}
+                      className="w-full p-3 sm:p-4 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                       onChange={handleInputChange}
                       value={formData.bankAccount}
-                      onClick={() => handleSelectClick('bankAccount')}
                       required
+                      onFocus={handleFieldFocus}
                     >
                       <option value="">Select Bank Account</option>
                       {bankAccounts.map(acc => (
@@ -278,6 +291,7 @@ const CashDeposit = () => {
                       value={formData.ifscCode}
                       className="w-full p-3 sm:p-4 text-sm sm:text-base border rounded-lg bg-gray-50"
                       readOnly
+                      onFocus={handleFieldFocus}
                     />
                   </div>
                 </div>
@@ -291,12 +305,12 @@ const CashDeposit = () => {
                     <input
                       type="text"
                       name="deliveryAddress"
-                      ref={formRefs.deliveryAddress}
                       value={formData.deliveryAddress}
                       placeholder="Enter your complete address"
-                      className={getFieldClassName('deliveryAddress')}
+                      className="w-full p-3 sm:p-4 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       onChange={handleInputChange}
                       required
+                      onFocus={handleFieldFocus}
                     />
                   </div>
 
@@ -310,11 +324,11 @@ const CashDeposit = () => {
                         <input
                           type="date"
                           name="date"
-                          ref={formRefs.date}
                           value={formData.date}
-                          className={getFieldClassName('date')}
+                          className="w-full pl-10 sm:pl-12 p-3 sm:p-4 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           onChange={handleInputChange}
                           required
+                          onFocus={handleFieldFocus}
                         />
                       </div>
                     </div>
@@ -326,11 +340,11 @@ const CashDeposit = () => {
                         <Clock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 sm:w-6 sm:h-6" />
                         <select
                           name="timeSlot"
-                          ref={formRefs.timeSlot}
                           value={formData.timeSlot}
-                          className={getFieldClassName('timeSlot')}
+                          className="w-full pl-10 sm:pl-12 p-3 sm:p-4 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                           onChange={handleInputChange}
                           required
+                          onFocus={handleFieldFocus}
                         >
                           <option value="">Select Time</option>
                           {standardTimeSlots.map(slot => (
@@ -342,9 +356,9 @@ const CashDeposit = () => {
                   </div>
                 </div>
 
-                {/* Amount Section */}
+                {/* Amount Section - Fixed Structure */}
                 <div className="md:col-span-2">
-                  <label className="block text-sm sm:text-base md:text-lg font-medium text-gray-700 mb-1.5">
+                  <label className="block text-sm sm:text-base md:text-lg font-medium text-gray-700">
                     Deposit Amount
                   </label>
                   <div className="relative">
@@ -352,12 +366,12 @@ const CashDeposit = () => {
                     <input
                       type="number"
                       name="amount"
-                      ref={formRefs.amount}
                       value={formData.amount}
                       placeholder="Enter the amount you want to deposit"
-                      className={getFieldClassName('amount')}
+                      className="w-full pl-10 sm:pl-12 p-3 sm:p-4 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       onChange={handleInputChange}
                       required
+                      onFocus={handleFieldFocus}
                     />
                   </div>
                 </div>

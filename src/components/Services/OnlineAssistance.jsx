@@ -7,6 +7,8 @@ import SuccessPage from '../Common/SuccessPage';
 import { useUser } from '../../hooks/useUser';
 import { linkedBankAccounts, standardTimeSlots } from '../../data/bankData';
 import { motion } from 'framer-motion';
+import { speak, parseDate, findBestMatch, parseTimeSlot } from '../../utils/voiceUtils';
+import VoiceAssistant from '../Common/VoiceAssistant';
 
 const OnlineAssistance = () => {
   const navigate = useNavigate();
@@ -46,6 +48,7 @@ const OnlineAssistance = () => {
 
   const [showOtpPopup, setShowOtpPopup] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [activeField, setActiveField] = useState(null);
 
   useEffect(() => {
     if (user) {
@@ -72,6 +75,94 @@ const OnlineAssistance = () => {
     };
   };
 
+  const handleVoiceInput = async (voiceData) => {
+    const field = Object.keys(voiceData)[0];
+    let value = voiceData[field].toLowerCase();
+
+    let processedValue;
+    let feedbackMessage;
+
+    switch (field) {
+      case 'bank':
+        const bankOptions = banks.map(bank => ({
+          value: bank.id,
+          label: bank.name,
+          searchTerms: [
+            bank.name.toLowerCase(),
+            bank.id.toLowerCase(),
+            `${bank.name.toLowerCase()} bank`
+          ]
+        }));
+        
+        const matchedBank = findBestMatch(value, bankOptions);
+        if (matchedBank) {
+          processedValue = matchedBank.value;
+          feedbackMessage = `Selected ${banks.find(b => b.id === matchedBank.value).name}`;
+        } else {
+          feedbackMessage = "Sorry, I couldn't find that bank. Please try again.";
+        }
+        break;
+
+      case 'date':
+        processedValue = parseDate(value);
+        if (processedValue) {
+          const date = new Date(processedValue);
+          feedbackMessage = `Set appointment date to ${date.toLocaleDateString()}`;
+        } else {
+          feedbackMessage = "I couldn't understand the date. Please try again.";
+        }
+        break;
+
+      case 'slot':
+        const matchedTimeSlot = parseTimeSlot(value, standardTimeSlots);
+        if (matchedTimeSlot) {
+          processedValue = matchedTimeSlot;
+          feedbackMessage = `Set appointment time to ${matchedTimeSlot}`;
+        } else {
+          feedbackMessage = "I couldn't understand the time. Please say something like '9 AM' or '2 PM'";
+        }
+        break;
+
+      case 'mode':
+        const modeSearchTerms = {
+          'telephonic': ['phone', 'call', 'telephone', 'voice', 'audio'],
+          'gmeet': ['video', 'meet', 'google meet', 'video call', 'online']
+        };
+
+        const modeMap = {
+          'phone': 'telephonic',
+          'call': 'telephonic',
+          'video': 'gmeet',
+          'meet': 'gmeet'
+        };
+
+        processedValue = modeMap[value] || value;
+        if (modeSearchTerms[processedValue]) {
+          feedbackMessage = `Selected ${processedValue === 'telephonic' ? 'phone call' : 'video call'} assistance`;
+        } else {
+          feedbackMessage = "Please select either phone call or video call mode";
+        }
+        break;
+
+      default:
+        processedValue = value;
+        feedbackMessage = `Set ${field} to ${value}`;
+    }
+
+    if (processedValue) {
+      setFormData(prev => ({
+        ...prev,
+        [field]: processedValue
+      }));
+    }
+
+    await speak(feedbackMessage);
+  };
+
+  const handleFieldFocus = (fieldName) => {
+    setActiveField(fieldName);
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -87,7 +178,7 @@ const OnlineAssistance = () => {
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="p-4 sm:p-6 md:p-2 h-[calc(100vh-80px)] overflow-y-auto bg-gray-50"
+        className="p-4 sm:p-6 md:p-2 h-[calc(95vh-95px)] overflow-y-auto bg-gray-50"
       >
         <div className="max-w-6xl mx-auto">
           <motion.div
@@ -95,6 +186,18 @@ const OnlineAssistance = () => {
             animate={{ opacity: 1, y: 0 }}
             className="bg-white rounded-xl shadow-lg border"
           >
+            {/* Voice Assistant Header */}
+            <div className="flex items-center justify-between gap-4 p-4 border-b">
+              <h2 className="text-lg font-semibold">Online Banking Assistance</h2>
+              <VoiceAssistant 
+                onVoiceInput={handleVoiceInput}
+                activeField={activeField}
+                feedbackEnabled={true}
+                size="md"
+                serviceType="ONLINE_ASSISTANCE"
+              />
+            </div>
+
             {/* Progress Steps */}
             <div className="grid grid-cols-3 border-b">
               {[
@@ -154,6 +257,7 @@ const OnlineAssistance = () => {
                       onChange={(e) => setFormData({ ...formData, bank: e.target.value })}
                       className="w-full pl-10 pr-3 py-3 appearance-none border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
                       required
+                      onFocus={() => handleFieldFocus('bank')}
                     >
                       <option value="">Select a bank</option>
                       {banks.map(bank => (
@@ -178,6 +282,7 @@ const OnlineAssistance = () => {
                         onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                         className="w-full pl-10 pr-3 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                         required
+                        onFocus={() => handleFieldFocus('date')}
                       />
                     </div>
                   </div>
@@ -194,6 +299,7 @@ const OnlineAssistance = () => {
                         onChange={(e) => setFormData({ ...formData, slot: e.target.value })}
                         className="w-full pl-10 pr-3 py-3 appearance-none border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
                         required
+                        onFocus={() => handleFieldFocus('slot')}
                       >
                         <option value="">Select Time</option>
                         {standardTimeSlots.map(slot => (
@@ -240,7 +346,10 @@ const OnlineAssistance = () => {
                   <label className="block text-sm sm:text-base md:text-lg font-medium text-gray-700 mb-3">
                     Select Assistance Mode
                   </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div 
+                    className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                    onClick={() => handleFieldFocus('mode')}
+                  >
                     {modeOptions.map((option) => (
                       <motion.div
                         key={option.id}

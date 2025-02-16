@@ -8,6 +8,8 @@ import { useUser } from '../../hooks/useUser';
 import { useServiceRequest } from '../../hooks/useServiceRequest';
 import { linkedBankAccounts, standardTimeSlots } from '../../data/bankData';
 import { motion } from 'framer-motion';
+import VoiceAssistant from '../Common/VoiceAssistant';
+import { speak, parseDate, findBestMatch, parseTimeSlot } from '../../utils/voiceUtils';
 
 const CashWithdrawal = () => {
   const navigate = useNavigate();
@@ -32,6 +34,7 @@ const CashWithdrawal = () => {
   const [otp, setOtp] = useState('');
   const [showOtpPopup, setShowOtpPopup] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [activeField, setActiveField] = useState(null);
 
   const handleInputChange = (e) => {
     if (e.target.name === 'bankAccount') {
@@ -100,12 +103,119 @@ const CashWithdrawal = () => {
     return progress;
   };
 
+  // Add voice input handling
+  const handleVoiceInput = async (voiceData) => {
+    const field = Object.keys(voiceData)[0];
+    let value = voiceData[field].toLowerCase();
+
+    // Check for form submission commands
+    if (['confirm', 'send', 'submit'].includes(value)) {
+      if (calculateProgress().bankDetails && 
+          calculateProgress().delivery && 
+          calculateProgress().amount) {
+        await speak("Submitting your withdrawal request");
+        handleSubmit({ preventDefault: () => {} });
+        return;
+      } else {
+        await speak("Please fill all required fields before submitting");
+        return;
+      }
+    }
+
+    let processedValue;
+    let feedbackMessage;
+
+    switch (field) {
+      case 'bankAccount':
+        const bankOptions = bankAccounts.map(acc => ({
+          value: acc.id,
+          label: acc.bank,
+          searchTerms: [
+            acc.bank.toLowerCase(),
+            acc.accountNo,
+            `${acc.bank.toLowerCase()} account`,
+            acc.accountNo.slice(-4)
+          ]
+        }));
+        
+        const matchedBank = findBestMatch(value, bankOptions);
+        if (matchedBank) {
+          const selectedAccount = bankAccounts.find(acc => acc.id === matchedBank.value);
+          setFormData(prev => ({
+            ...prev,
+            bankAccount: matchedBank.value,
+            ifscCode: selectedAccount.ifsc,
+            accountNo: selectedAccount.accountNo
+          }));
+          feedbackMessage = `Selected ${selectedAccount.bank} account and set IFSC code`;
+        } else {
+          feedbackMessage = "Sorry, I couldn't find that bank account. Please try again.";
+        }
+        break;
+
+      case 'withdrawalAddress':
+        processedValue = value;
+        feedbackMessage = `Set delivery address to ${value}`;
+        break;
+
+      case 'date':
+        processedValue = parseDate(value);
+        if (processedValue) {
+          const date = new Date(processedValue);
+          feedbackMessage = `Set withdrawal date to ${date.toLocaleDateString()}`;
+        } else {
+          feedbackMessage = "I couldn't understand the date. Please try again.";
+        }
+        break;
+
+      case 'timeSlot':
+        const matchedTimeSlot = parseTimeSlot(value, standardTimeSlots);
+        if (matchedTimeSlot) {
+          setFormData(prev => ({
+            ...prev,
+            timeSlot: matchedTimeSlot
+          }));
+          feedbackMessage = `Set withdrawal time to ${matchedTimeSlot}`;
+        } else {
+          feedbackMessage = "I couldn't understand the time. Please say something like '9 AM', '2 PM', or 'morning'";
+        }
+        break;
+
+      case 'amount':
+        const amountStr = value.replace(/[^0-9]/g, '');
+        if (amountStr) {
+          processedValue = amountStr;
+          feedbackMessage = `Set withdrawal amount to ${processedValue} rupees`;
+        } else {
+          feedbackMessage = "I couldn't understand the amount. Please say a number.";
+        }
+        break;
+
+      default:
+        processedValue = value;
+        feedbackMessage = `Set ${field} to ${value}`;
+    }
+
+    if (processedValue) {
+      setFormData(prev => ({
+        ...prev,
+        [field]: processedValue
+      }));
+    }
+
+    await speak(feedbackMessage);
+  };
+
+  const handleFieldFocus = (fieldName) => {
+    setActiveField(fieldName);
+  };
+
   return (
     <DashboardLayout>
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="p-4 sm:p-6 md:p-2 h-[calc(90vh-80px)] overflow-y-auto bg-gray-50"
+        className="p-4 sm:p-6 md:p-2 h-[calc(95vh-90px)] overflow-y-auto bg-gray-50"
       >
         <div className="max-w-6xl mx-auto">
           <motion.div
@@ -113,6 +223,18 @@ const CashWithdrawal = () => {
             animate={{ opacity: 1, y: 0 }}
             className="bg-white rounded-xl shadow-lg border"
           >
+            {/* Voice Assistant Header */}
+            <div className="flex items-center justify-between gap-4 p-4 border-b">
+              <h2 className="text-lg font-semibold">Cash Withdrawal Service</h2>
+              <VoiceAssistant 
+                onVoiceInput={handleVoiceInput}
+                activeField={activeField}
+                feedbackEnabled={true}
+                size="md"
+                serviceType="CASH_WITHDRAWAL"
+              />
+            </div>
+
             {/* Progress Steps */}
             <div className="grid grid-cols-3 border-b">
               {[
@@ -161,7 +283,7 @@ const CashWithdrawal = () => {
               className="p-4 sm:p-6 md:p-8"
               layout
             >
-              <div className="grid md:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
+              <div className="grid md:grid-cols-2 gap-4 sm:gap-6 md:gap-6">
                 {/* Bank Details Section */}
                 <div className="space-y-4 sm:space-y-6">
                   <div>
@@ -172,6 +294,7 @@ const CashWithdrawal = () => {
                       name="bankAccount"
                       className="w-full p-3 sm:p-4 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                       onChange={handleInputChange}
+                      onFocus={() => handleFieldFocus('bankAccount')}
                       value={formData.bankAccount}
                       required
                     >
@@ -213,6 +336,7 @@ const CashWithdrawal = () => {
                         placeholder="Enter your complete address"
                         className="w-full pl-10 p-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
                         onChange={handleInputChange}
+                        onFocus={() => handleFieldFocus('withdrawalAddress')}
                         required
                       />
                     </div>
@@ -231,6 +355,7 @@ const CashWithdrawal = () => {
                           value={formData.date}
                           className="w-full pl-10 p-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
                           onChange={handleInputChange}
+                          onFocus={() => handleFieldFocus('date')}
                           required
                         />
                       </div>
@@ -246,6 +371,7 @@ const CashWithdrawal = () => {
                           value={formData.timeSlot}
                           className="w-full pl-10 p-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
                           onChange={handleInputChange}
+                          onFocus={() => handleFieldFocus('timeSlot')}
                           required
                         >
                           <option value="">Select Time</option>
@@ -260,7 +386,7 @@ const CashWithdrawal = () => {
 
                 {/* Amount Section */}
                 <div className="md:col-span-2">
-                  <label className="block text-sm sm:text-base md:text-lg font-medium text-gray-700 mb-1.5">
+                  <label className="block text-sm sm:text-base md:text-lg font-medium text-gray-700 ">
                     Withdrawal Amount
                   </label>
                   <div className="relative">
@@ -272,6 +398,7 @@ const CashWithdrawal = () => {
                       placeholder="Enter amount"
                       className="w-full pl-10 p-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
                       onChange={handleInputChange}
+                      onFocus={() => handleFieldFocus('amount')}
                       required
                     />
                   </div>

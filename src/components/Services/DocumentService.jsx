@@ -8,11 +8,14 @@ import OtpVerificationPopup from '../Common/OtpVerificationPopup';
 import SuccessPage from '../Common/SuccessPage';
 import { useServiceRequest } from '../../hooks/useServiceRequest';
 import { linkedBankAccounts, standardTimeSlots } from '../../data/bankData';
+import { speak, parseDate, findBestMatch, parseTimeSlot } from '../../utils/voiceUtils';
+import VoiceAssistant from '../Common/VoiceAssistant';
 
 const DocumentService = () => {
   const navigate = useNavigate();
   const { user } = useUser();
   const [selectedService, setSelectedService] = useState('collect');
+  const [activeField, setActiveField] = useState(null);
   
   // Add document type options
   const documentTypes = [
@@ -150,12 +153,102 @@ const DocumentService = () => {
     return progress;
   };
 
+  const handleVoiceInput = async (voiceData) => {
+    const field = Object.keys(voiceData)[0];
+    let value = voiceData[field].toLowerCase();
+
+    let processedValue;
+    let feedbackMessage;
+
+    switch (field) {
+      case 'bankAccount':
+        const bankOptions = bankAccounts.map(acc => ({
+          value: acc.id,
+          label: acc.fullName,
+          searchTerms: [
+            acc.fullName.toLowerCase(),
+            acc.accountNo,
+            `${acc.fullName.toLowerCase()} account`
+          ]
+        }));
+        
+        const matchedBank = findBestMatch(value, bankOptions);
+        if (matchedBank) {
+          const selectedAccount = bankAccounts.find(acc => acc.id === matchedBank.value);
+          setFormData(prev => ({
+            ...prev,
+            bankAccount: matchedBank.value,
+            ifscCode: selectedAccount.ifsc
+          }));
+          feedbackMessage = `Selected ${selectedAccount.fullName} account`;
+        } else {
+          feedbackMessage = "Sorry, I couldn't find that bank account.";
+        }
+        break;
+
+      case 'documentType':
+        const docOptions = documentTypes.map(type => ({
+          value: type.value,
+          label: type.label,
+          searchTerms: [type.label.toLowerCase(), type.value]
+        }));
+        
+        const matchedDoc = findBestMatch(value, docOptions);
+        if (matchedDoc) {
+          processedValue = matchedDoc.value;
+          feedbackMessage = `Selected ${matchedDoc.label} document type`;
+        } else {
+          feedbackMessage = "Please select a valid document type";
+        }
+        break;
+
+      case 'collectionAddress':
+      case 'deliveryAddress':
+        processedValue = value;
+        feedbackMessage = `Set ${field === 'collectionAddress' ? 'collection' : 'delivery'} address to ${value}`;
+        break;
+
+      case 'date':
+        processedValue = parseDate(value);
+        if (processedValue) {
+          const date = new Date(processedValue);
+          feedbackMessage = `Set date to ${date.toLocaleDateString()}`;
+        } else {
+          feedbackMessage = "I couldn't understand the date. Please try again.";
+        }
+        break;
+
+      case 'timeSlot':
+        const matchedTimeSlot = parseTimeSlot(value, standardTimeSlots);
+        if (matchedTimeSlot) {
+          processedValue = matchedTimeSlot;
+          feedbackMessage = `Set time slot to ${matchedTimeSlot}`;
+        } else {
+          feedbackMessage = "Please say a valid time slot like '9 AM' or '2 PM'";
+        }
+        break;
+    }
+
+    if (processedValue) {
+      setFormData(prev => ({
+        ...prev,
+        [field]: processedValue
+      }));
+    }
+
+    await speak(feedbackMessage);
+  };
+
+  const handleFieldFocus = (fieldName) => {
+    setActiveField(fieldName);
+  };
+
   return (
     <DashboardLayout>
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="p-3 sm:p-4 h-[calc(100vh-80px)] overflow-y-auto bg-gray-50" // Reduced padding
+        className="p-3 sm:p-4 h-[calc(95vh-100px)] overflow-y-auto bg-gray-50" // Reduced padding
       >
         <div className="max-w-6xl mx-auto">
           <motion.div
@@ -163,6 +256,18 @@ const DocumentService = () => {
             animate={{ opacity: 1, y: 0 }}
             className="bg-white rounded-xl shadow-lg border"
           >
+            {/* Add Voice Assistant */}
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="text-lg font-semibold">Document {selectedService === 'collect' ? 'Collection' : 'Delivery'}</h2>
+              <VoiceAssistant 
+                onVoiceInput={handleVoiceInput}
+                activeField={activeField}
+                feedbackEnabled={true}
+                size="md"
+                serviceType={selectedService === 'collect' ? 'DOCUMENT_COLLECTION' : 'DOCUMENT_DELIVERY'}
+              />
+            </div>
+
             {/* Service Type Toggle - Updated styling */}
             <div className="p-4 sm:p-5 border-b">
               <div className="flex gap-4 max-w-md mx-auto bg-gray-100 p-2 rounded-xl">
@@ -251,6 +356,7 @@ const DocumentService = () => {
                       onChange={handleInputChange}
                       className="w-full pl-10 p-3.5 text-base border rounded-lg focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
                       required
+                      onFocus={() => handleFieldFocus('bankAccount')}
                     >
                       <option value="">Select Bank Account</option>
                       {bankAccounts.map(acc => (
@@ -275,6 +381,7 @@ const DocumentService = () => {
                       onChange={handleInputChange}
                       className="w-full pl-10 p-3.5 text-base border rounded-lg focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
                       required
+                      onFocus={() => handleFieldFocus('documentType')}
                     >
                       {documentTypes.map(type => (
                         <option key={type.value} value={type.value}>
@@ -300,6 +407,7 @@ const DocumentService = () => {
                       rows="2" // Reduced rows
                       required
                       placeholder={`Enter ${selectedService === 'collect' ? 'collection' : 'delivery'} address`}
+                      onFocus={() => handleFieldFocus(selectedService === 'collect' ? 'collectionAddress' : 'deliveryAddress')}
                     />
                   </div>
                 </div>
@@ -320,6 +428,7 @@ const DocumentService = () => {
                         onChange={handleInputChange}
                         className="w-full pl-10 p-3.5 text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
                         required
+                        onFocus={() => handleFieldFocus('date')}
                       />
                     </div>
                   </div>
@@ -335,6 +444,7 @@ const DocumentService = () => {
                         onChange={handleInputChange}
                         className="w-full pl-10 p-3.5 text-base border rounded-lg focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
                         required
+                        onFocus={() => handleFieldFocus('timeSlot')}
                       >
                         <option value="">Select Time Slot</option>
                         {standardTimeSlots.map(slot => (

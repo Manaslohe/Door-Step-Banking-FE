@@ -8,6 +8,8 @@ import OtpVerificationPopup from '../Common/OtpVerificationPopup';
 import SuccessPage from '../Common/SuccessPage';
 import { useServiceRequest } from '../../hooks/useServiceRequest';
 import { banksList, standardTimeSlots } from '../../data/bankData';
+import { speak, parseDate, findBestMatch, parseTimeSlot } from '../../utils/voiceUtils';
+import VoiceAssistant from '../Common/VoiceAssistant';
 
 const NewAccount = () => {
   const navigate = useNavigate();
@@ -26,6 +28,7 @@ const NewAccount = () => {
   const [showOtpPopup, setShowOtpPopup] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const { createServiceRequest } = useServiceRequest();
+  const [activeField, setActiveField] = useState(null);
 
   useEffect(() => {
     if (user) {
@@ -116,6 +119,119 @@ const NewAccount = () => {
     return progress;
   };
 
+  const handleVoiceInput = async (voiceData) => {
+    const field = Object.keys(voiceData)[0];
+    let value = voiceData[field].toLowerCase();
+
+    let processedValue;
+    let feedbackMessage;
+
+    switch (field) {
+      case 'firstName':
+      case 'lastName':
+        processedValue = value.charAt(0).toUpperCase() + value.slice(1);
+        feedbackMessage = `Set ${field === 'firstName' ? 'first' : 'last'} name to ${processedValue}`;
+        break;
+
+      case 'email':
+        // Clean up email speech input
+        processedValue = value.replace(/\s+/g, '').toLowerCase();
+        if (processedValue.includes('at')) {
+          processedValue = processedValue.replace('at', '@');
+        }
+        feedbackMessage = `Set email to ${processedValue}`;
+        break;
+
+      case 'phone':
+        processedValue = value.replace(/[^0-9]/g, '');
+        if (processedValue) {
+          feedbackMessage = `Set phone number to ${processedValue}`;
+        } else {
+          feedbackMessage = "I couldn't understand the phone number. Please say the digits clearly.";
+        }
+        break;
+
+      case 'bankId':
+        const bankOptions = banksList.map(bank => ({
+          value: bank.id,
+          label: bank.name,
+          searchTerms: [
+            bank.name.toLowerCase(),
+            bank.shortName?.toLowerCase(),
+            `${bank.name.toLowerCase()} bank`
+          ]
+        }));
+        
+        const matchedBank = findBestMatch(value, bankOptions);
+        if (matchedBank) {
+          processedValue = matchedBank.value;
+          const selectedBank = banksList.find(b => b.id === matchedBank.value);
+          feedbackMessage = `Selected ${selectedBank.name}`;
+        } else {
+          feedbackMessage = "Sorry, I couldn't find that bank. Please try again.";
+        }
+        break;
+
+      case 'accountType':
+        const accountTypes = [
+          { value: 'savings', searchTerms: ['savings', 'saving', 'basic'] },
+          { value: 'current', searchTerms: ['current', 'business'] },
+          { value: 'fixed', searchTerms: ['fixed', 'fd', 'deposit'] }
+        ];
+        
+        const matchedType = findBestMatch(value, accountTypes);
+        if (matchedType) {
+          processedValue = matchedType.value;
+          feedbackMessage = `Selected ${matchedType.value} account type`;
+        } else {
+          feedbackMessage = "Please select either savings, current, or fixed deposit account";
+        }
+        break;
+
+      case 'visitDate':
+        processedValue = parseDate(value);
+        if (processedValue) {
+          const date = new Date(processedValue);
+          feedbackMessage = `Set visit date to ${date.toLocaleDateString()}`;
+        } else {
+          feedbackMessage = "I couldn't understand the date. Please try again.";
+        }
+        break;
+
+      case 'timeSlot':
+        const matchedTimeSlot = parseTimeSlot(value, standardTimeSlots);
+        if (matchedTimeSlot) {
+          processedValue = matchedTimeSlot;
+          feedbackMessage = `Set appointment time to ${matchedTimeSlot}`;
+        } else {
+          feedbackMessage = "I couldn't understand the time. Please say something like '9 AM' or '2 PM'";
+        }
+        break;
+
+      case 'address':
+        processedValue = value;
+        feedbackMessage = `Set address to ${value}`;
+        break;
+
+      default:
+        processedValue = value;
+        feedbackMessage = `Set ${field} to ${value}`;
+    }
+
+    if (processedValue) {
+      setFormData(prev => ({
+        ...prev,
+        [field]: processedValue
+      }));
+    }
+
+    await speak(feedbackMessage);
+  };
+
+  const handleFieldFocus = (fieldName) => {
+    setActiveField(fieldName);
+  };
+
   return (
     <DashboardLayout>
       <motion.div 
@@ -129,6 +245,18 @@ const NewAccount = () => {
             animate={{ opacity: 1, y: 0 }}
             className="bg-white rounded-xl shadow-lg border"
           >
+            {/* Voice Assistant Header */}
+            <div className="flex items-center justify-between gap-4 p-4 border-b">
+              <h2 className="text-lg font-semibold">New Account Opening</h2>
+              <VoiceAssistant 
+                onVoiceInput={handleVoiceInput}
+                activeField={activeField}
+                feedbackEnabled={true}
+                size="md"
+                serviceType="NEW_ACCOUNT"
+              />
+            </div>
+
             {/* Progress Steps */}
             <div className="grid grid-cols-3 border-b">
               {[
@@ -184,6 +312,7 @@ const NewAccount = () => {
                         onChange={(e) => setFormData({...formData, firstName: e.target.value})}
                         className="w-full p-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
                         required
+                        onFocus={() => handleFieldFocus('firstName')}
                       />
                     </div>
                     <div>
@@ -195,6 +324,7 @@ const NewAccount = () => {
                         onChange={(e) => setFormData({...formData, lastName: e.target.value})}
                         className="w-full p-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
                         required
+                        onFocus={() => handleFieldFocus('lastName')}
                       />
                     </div>
                   </div>
@@ -210,6 +340,7 @@ const NewAccount = () => {
                         onChange={(e) => setFormData({...formData, email: e.target.value})}
                         className="w-full pl-10 p-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
                         required
+                        onFocus={() => handleFieldFocus('email')}
                       />
                     </div>
                   </div>
@@ -225,6 +356,7 @@ const NewAccount = () => {
                         onChange={(e) => setFormData({...formData, phone: e.target.value})}
                         className="w-full pl-10 p-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
                         required
+                        onFocus={() => handleFieldFocus('phone')}
                       />
                     </div>
                   </div>
@@ -242,6 +374,7 @@ const NewAccount = () => {
                         onChange={(e) => setFormData({...formData, bankId: e.target.value})}
                         className="w-full pl-10 p-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
                         required
+                        onFocus={() => handleFieldFocus('bankId')}
                       >
                         <option value="">Select Bank</option>
                         {banksList.map(bank => (
@@ -259,6 +392,7 @@ const NewAccount = () => {
                       onChange={(e) => setFormData({...formData, accountType: e.target.value})}
                       className="w-full p-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
                       required
+                      onFocus={() => handleFieldFocus('accountType')}
                     >
                       <option value="">Select Account Type</option>
                       <option value="savings">Savings Account</option>
@@ -280,6 +414,7 @@ const NewAccount = () => {
                           onChange={(e) => setFormData({...formData, visitDate: e.target.value})}
                           className="w-full pl-10 p-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
                           required
+                          onFocus={() => handleFieldFocus('visitDate')}
                         />
                       </div>
                     </div>
@@ -293,6 +428,7 @@ const NewAccount = () => {
                           onChange={(e) => setFormData({...formData, timeSlot: e.target.value})}
                           className="w-full pl-10 p-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
                           required
+                          onFocus={() => handleFieldFocus('timeSlot')}
                         >
                           <option value="">Select Time</option>
                           {timeSlots.map(slot => (
@@ -316,6 +452,7 @@ const NewAccount = () => {
                       className="w-full pl-10 p-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
                       rows="3"
                       required
+                      onFocus={() => handleFieldFocus('address')}
                     />
                   </div>
                 </div>
