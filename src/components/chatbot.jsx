@@ -245,12 +245,12 @@ const Chatbot = ({ onClose }) => {
       // First, check if the text might be Hinglish
       const hasHinglishPattern = /[a-zA-Z]/i.test(text) && 
         /(?:hai|kya|main|hum|tum|aap|kaise|karenge|chahiye)/i.test(text);
-
+  
       if (!hasHinglishPattern) return text;
-
+  
       // Use Gemini to convert Hinglish to Hindi
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -263,7 +263,7 @@ const Chatbot = ({ onClose }) => {
           })
         }
       );
-
+  
       if (!response.ok) return text;
       
       const data = await response.json();
@@ -273,7 +273,7 @@ const Chatbot = ({ onClose }) => {
       return text;
     }
   };
-
+  
   const handleSend = async (message) => {
     if (!message.trim()) return;
     
@@ -281,52 +281,52 @@ const Chatbot = ({ onClose }) => {
     if (language === 'hindi') {
       processedMessage = await convertHinglishToHindi(message);
     }
-
+  
     const newMessage = {
       message: processedMessage,
       direction: 'outgoing',
       sender: "user"
     };
-
+  
     const newMessages = [...messages, newMessage];
     setMessages(newMessages);
     setInputValue('');
     setIsTyping(true);
     await processMessageToChatGPT(newMessages);
   };
-
+  
   async function processMessageToChatGPT(chatMessages) {
     const lastMessage = chatMessages[chatMessages.length - 1];
-
+  
     const prompt = {
       contents: [{
         parts: [{
           text: `${systemContext}
-
-Current language: ${language}
-Respond in ${language === 'hindi' ? 'Hindi' : 'English'} language.
-Keep responses under 50 words.
-Be helpful and friendly.
-
-User question: ${lastMessage.message}
-
-Remember to:
-1. Be concise and clear
-2. Focus on the specific service or question asked
-3. Provide step-by-step guidance if needed
-4. Include any relevant requirements or documents needed
-5. Mention how to track the service if applicable`
+  
+  Current language: ${language}
+  Respond in ${language === 'hindi' ? 'Hindi' : 'English'} language.
+  Keep responses under 50 words.
+  Be helpful and friendly.
+  
+  User question: ${lastMessage.message}
+  
+  Remember to:
+  1. Be concise and clear
+  2. Focus on the specific service or question asked
+  3. Provide step-by-step guidance if needed
+  4. Include any relevant requirements or documents needed
+  5. Mention how to track the service if applicable`
         }]
       }]
     };
-
+  
     try {
       if (!API_KEY) {
         throw new Error('API key not configured');
       }
-
+  
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`,
         {
           method: "POST",
           headers: {
@@ -335,14 +335,14 @@ Remember to:
           body: JSON.stringify(prompt)
         }
       );
-
+  
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
+  
       const data = await response.json();
       console.log('API Response:', data); // Debug log
-
+  
       // Updated response handling
       if (data && data.candidates && data.candidates[0] && data.candidates[0].content) {
         const responseText = data.candidates[0].content.parts[0]?.text?.trim();
@@ -372,14 +372,13 @@ Remember to:
       setIsTyping(false);
     }
   }
-
+  
   const handleClose = () => {
     if (speechSynthesis) {
       speechSynthesis.cancel();
     }
     onClose?.();
   };
-
   return (
     <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-lg overflow-hidden h-[600px] 
       flex flex-col border border-blue-100">

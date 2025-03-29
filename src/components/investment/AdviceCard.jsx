@@ -40,7 +40,7 @@ const cleanAndParseJson = (text) => {
 };
 
 const getPromptForType = (type, language) => {
-  const basePrompt = `You are an Indian Investment Expert. Generate specific advice for ${type} investments. Return only a JSON object with this structure:
+  return `You are an Indian Investment Expert. Generate specific advice for ${type} investments. Return only a JSON object with this structure:
   {
     "title": "string",
     "recommendation": "string",
@@ -48,9 +48,7 @@ const getPromptForType = (type, language) => {
     "riskLevel": "string",
     "timeframe": "string"
     ${type === 'banking' ? ',"interestRate": number' : ''}
-  }`;
-  
-  return `${basePrompt} Use ${language === 'hindi' ? 'Hindi' : 'English'} language.`;
+  } Use ${language === 'hindi' ? 'Hindi' : 'English'} language.`;
 };
 
 export const AdviceCard = ({ icon, title, type }) => {
@@ -70,20 +68,29 @@ export const AdviceCard = ({ icon, title, type }) => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
+      // Updated API endpoint to use Gemini 2.0-flash
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json'
+          },
+          // Updated request structure to match the new Gemini API format
           body: JSON.stringify({
-            contents: [{
-              parts: [{ text: getPromptForType(type, language) }]
-            }],
+            contents: [
+              {
+                parts: [
+                  {
+                    text: getPromptForType(type, language)
+                  }
+                ]
+              }
+            ],
             generationConfig: {
-              temperature: 0.7,
-              topK: 1,
+              temperature: 0.2,
               topP: 0.8,
-              maxOutputTokens: 1024,
+              topK: 40
             }
           }),
           signal: controller.signal
@@ -93,11 +100,21 @@ export const AdviceCard = ({ icon, title, type }) => {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error?.message || '';
+        
+        if (errorMessage.includes('models') && errorMessage.includes('not found')) {
+          throw new Error('AI service configuration error. Please try again later.');
+        }
+        throw new Error(
+          errorMessage || 
+          `API request failed with status ${response.status}`
+        );
       }
 
       const data = await response.json();
       
+      // Updated response structure handling
       if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
         throw new Error('Invalid API response format');
       }
@@ -115,15 +132,20 @@ export const AdviceCard = ({ icon, title, type }) => {
     } catch (err) {
       console.error('Error fetching advice:', err);
       
-      if (retry < MAX_RETRIES && !err.name === 'AbortError') {
+      if (retry < MAX_RETRIES && err.name !== 'AbortError') {
         console.log(`Retrying... Attempt ${retry + 1} of ${MAX_RETRIES}`);
         setTimeout(() => fetchAdvice(retry + 1), 1000 * (retry + 1)); // Exponential backoff
         setRetryCount(retry + 1);
       } else {
-        setError(err.message === 'Failed to fetch' 
-          ? 'Network error. Please check your connection.' 
-          : 'Failed to get investment advice. Please try again.'
-        );
+        let errorMessage = 'Failed to get investment advice. Please try again.';
+        if (err.message.includes('404')) {
+          errorMessage = 'AI service is temporarily unavailable. Please try again later.';
+        } else if (err.message.includes('API key')) {
+          errorMessage = 'Invalid API configuration. Please check the settings.';
+        } else if (err.message.includes('Bad Request')) {
+          errorMessage = 'Error in request format. Please report this issue.';
+        }
+        setError(errorMessage);
         setRetryCount(0);
       }
     } finally {
