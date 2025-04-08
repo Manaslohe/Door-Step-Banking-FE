@@ -7,9 +7,12 @@ import {
   Lock, 
   LogIn, 
   Loader2, 
-  AlertCircle 
+  AlertCircle,
+  CheckCircle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import api from '../../services/api';
+import { auth } from '../../utils/auth';
 
 const AgentLogin = ({ onClose }) => {
   const navigate = useNavigate();
@@ -17,6 +20,8 @@ const AgentLogin = ({ onClose }) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,43 +29,50 @@ const AgentLogin = ({ onClose }) => {
     setLoading(true);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userId, password })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
-
-      if (data.user.userType !== 'agent') {
-        throw new Error('Unauthorized access');
-      }
-
-      localStorage.setItem('agentToken', data.token);
-      localStorage.setItem('agentUser', JSON.stringify(data.user));
+      const loginPayload = {
+        email: userId,
+        password: password
+      };
       
-      if (response.ok) {
-        // Add small delay before navigation
-        setTimeout(() => {
-          navigate('/agent/dashboard', { replace: true });
-        }, 1000);
+      const response = await api.post('/users/login', loginPayload);
+      
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Login failed');
       }
+
+      const { token, user } = response.data.data;
+      
+      // Verify this is an agent account
+      if (user.userType !== 'agent') {
+        throw new Error('Unauthorized access. This portal is for agents only.');
+      }
+
+      // Use auth utility to set authentication
+      const authSet = auth.setAuth(token, user);
+      
+      if (!authSet || !auth.isSessionValid()) {
+        throw new Error('Authentication failed');
+      }
+
+      // Show success message
+      setSuccess(true);
+      setShowSuccessOverlay(true);
+
+      // Add small delay before navigation
+      setTimeout(() => {
+        navigate('/agent/dashboard', { replace: true });
+      }, 2000);
 
     } catch (err) {
-      setError(err.message);
+      console.error('Login error:', err);
+      setError(err.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="p-10">
+    <div className="p-10 relative">
       <div className="text-center mb-8">
         <motion.div
           initial={{ scale: 0.5, opacity: 0 }}
@@ -74,10 +86,14 @@ const AgentLogin = ({ onClose }) => {
       </div>
 
       {error && (
-        <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 flex items-start">
-          <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 mr-2" />
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 flex items-start"
+        >
+          <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 mr-2 flex-shrink-0" />
           <p className="text-red-600 text-sm">{error}</p>
-        </div>
+        </motion.div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -95,6 +111,7 @@ const AgentLogin = ({ onClose }) => {
                   text-lg transition-all duration-300 bg-white/50 backdrop-blur-sm"
                 placeholder="Enter your runner ID"
                 required
+                disabled={loading || success}
               />
             </div>
           </div>
@@ -112,6 +129,7 @@ const AgentLogin = ({ onClose }) => {
                   text-lg transition-all duration-300 bg-white/50 backdrop-blur-sm"
                 placeholder="Enter your password"
                 required
+                disabled={loading || success}
               />
             </div>
           </div>
@@ -119,16 +137,32 @@ const AgentLogin = ({ onClose }) => {
 
         <motion.button
           type="submit"
-          disabled={loading}
-          whileHover={{ scale: 1.01 }}
-          whileTap={{ scale: 0.99 }}
-          className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white 
-            py-4 rounded-xl hover:from-orange-600 hover:to-orange-700 
-            transition-all duration-300 flex items-center justify-center space-x-2 
-            text-lg font-medium shadow-lg hover:shadow-xl disabled:opacity-50"
+          disabled={loading || success || !userId || !password}
+          whileHover={{ scale: loading || success ? 1 : 1.01 }}
+          whileTap={{ scale: loading || success ? 1 : 0.99 }}
+          className={`w-full py-4 rounded-xl transition-all duration-300 
+            flex items-center justify-center space-x-2 text-lg font-medium
+            ${loading || success 
+              ? success 
+                ? 'bg-green-500 text-white' 
+                : 'bg-gray-100 cursor-not-allowed text-gray-400' 
+              : !userId || !password
+                ? 'bg-gray-100 cursor-not-allowed text-gray-400'
+                : 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl'
+            }`}
         >
           {loading ? (
             <Loader2 className="w-6 h-6 animate-spin" />
+          ) : success ? (
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1, rotate: [0, 360] }}
+              transition={{ type: "spring", duration: 0.7 }}
+              className="flex items-center space-x-2"
+            >
+              <CheckCircle className="w-6 h-6" />
+              <span>Success!</span>
+            </motion.div>
           ) : (
             <>
               <LogIn className="w-6 h-6" />
@@ -137,6 +171,45 @@ const AgentLogin = ({ onClose }) => {
           )}
         </motion.button>
       </form>
+
+      {showSuccessOverlay && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="absolute inset-0 bg-white/90 backdrop-blur-sm z-10 flex flex-col items-center justify-center"
+        >
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: [0, 1.2, 1] }}
+            transition={{ duration: 0.5, type: "spring" }}
+            className="bg-orange-50 rounded-full p-6 mb-4"
+          >
+            <CheckCircle className="w-16 h-16 text-orange-500" />
+          </motion.div>
+          <motion.h3
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-2xl font-bold text-gray-800 mb-2"
+          >
+            Login Successful!
+          </motion.h3>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="text-gray-600"
+          >
+            Redirecting to your dashboard...
+          </motion.p>
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: "100%" }}
+            transition={{ delay: 0.5, duration: 1.5 }}
+            className="h-1 bg-orange-500 mt-4 rounded-full"
+          />
+        </motion.div>
+      )}
     </div>
   );
 };

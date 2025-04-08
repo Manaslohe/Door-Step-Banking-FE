@@ -42,16 +42,25 @@ export const auth = {
 
   getToken() {
     try {
-      // Try multiple sources for token
-      const token = localStorage.getItem(TOKEN_KEY) || 
-                   JSON.parse(localStorage.getItem('authData'))?.token ||
-                   tokenManager.getDashboardToken();
+      // Try multiple sources for token, with more detailed logging
+      const tokenFromStorage = localStorage.getItem(TOKEN_KEY);
+      const tokenFromAuthData = JSON.parse(localStorage.getItem('authData'))?.token;
+      const dashboardToken = tokenManager.getDashboardToken ? tokenManager.getDashboardToken() : null;
+      
+      console.log('Token sources:', { 
+        tokenFromStorage: !!tokenFromStorage, 
+        tokenFromAuthData: !!tokenFromAuthData, 
+        dashboardToken: !!dashboardToken 
+      });
+      
+      const token = tokenFromStorage || tokenFromAuthData || dashboardToken;
       
       if (token) {
-        // Ensure token is properly stored
+        // Ensure token is properly stored in all places
         localStorage.setItem(TOKEN_KEY, token);
         return token;
       }
+      console.warn('No token found in any storage location');
       return null;
     } catch (error) {
       console.error('Error getting token:', error);
@@ -114,4 +123,9 @@ export const auth = {
     localStorage.removeItem('authData');
     localStorage.removeItem('dashboardToken');
   }
+};
+
+// Add a convenience method to directly access the token
+export const getAuthToken = () => {
+  return auth.getToken();
 };

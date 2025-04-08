@@ -374,20 +374,6 @@ const BlogForum = ({ user = { name: "Financial Expert" } }) => {
         onClose={() => setShowCreateModal(false)}
       />
 
-      <style jsx>{`
-        @keyframes like {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.2); }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes scaleIn {
-          from { transform: scale(0.8); opacity: 0; }
-          to { transform: scale(1); opacity: 1; }
-        }
-      `}</style>
     </DashboardLayout>
   );
 };

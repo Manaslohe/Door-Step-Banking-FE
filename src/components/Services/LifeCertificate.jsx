@@ -10,6 +10,7 @@ import { linkedBankAccounts, standardTimeSlots } from '../../data/bankData';
 import { motion } from 'framer-motion';
 import { speak, parseDate, findBestMatch, parseTimeSlot } from '../../utils/voiceUtils';
 import VoiceAssistant from '../Common/VoiceAssistant';
+import { useServiceTranslation } from '../../context/ServiceTranslationContext';
 
 const LifeCertificate = () => {
   const navigate = useNavigate();
@@ -26,6 +27,7 @@ const LifeCertificate = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const { createServiceRequest } = useServiceRequest();
   const [activeField, setActiveField] = useState(null);
+  const t = useServiceTranslation();
 
   // Add useEffect to update form data when user data is available
   useEffect(() => {
@@ -208,7 +210,7 @@ const LifeCertificate = () => {
           >
             {/* Voice Assistant Header */}
             <div className="flex items-center justify-between gap-4 p-4 border-b">
-              <h2 className="text-lg font-semibold">Life Certificate Verification</h2>
+              <h2 className="text-lg font-semibold">{t.lifeCertificate}</h2>
               <VoiceAssistant 
                 onVoiceInput={handleVoiceInput}
                 activeField={activeField}
@@ -221,9 +223,9 @@ const LifeCertificate = () => {
             {/* Progress Steps */}
             <div className="grid grid-cols-3 border-b">
               {[
-                { key: 'personalDetails', label: 'Personal Details', icon: User2 },
-                { key: 'bankDetails', label: 'Bank Details', icon: Building2 },
-                { key: 'schedule', label: 'Schedule', icon: Calendar }
+                { key: 'personalDetails', label: t.personalInfo, icon: User2 },
+                { key: 'bankDetails', label: t.bankDetails, icon: Building2 },
+                { key: 'schedule', label: t.appointment, icon: Calendar }
               ].map((step, index) => (
                 <motion.div
                   key={step.key}
@@ -245,7 +247,7 @@ const LifeCertificate = () => {
                         {step.label}
                       </p>
                       <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">
-                        {calculateProgress()[step.key] ? 'Completed' : 'Pending'}
+                        {calculateProgress()[step.key] ? t.completed : t.pending}
                       </p>
                     </div>
                   </div>
@@ -264,7 +266,7 @@ const LifeCertificate = () => {
                 <div className="space-y-6">
                   <div className="relative">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Pension Account Number
+                      {t.pensionAccountNo}
                     </label>
                     <div className="relative">
                       <User2 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -282,7 +284,7 @@ const LifeCertificate = () => {
 
                   <div className="relative">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Contact Number
+                      {t.contactNumber}
                     </label>
                     <div className="relative">
                       <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -303,7 +305,7 @@ const LifeCertificate = () => {
                 <div className="space-y-6">
                   <div className="relative">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Select Bank
+                      {t.selectBank}
                     </label>
                     <div className="relative">
                       <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -315,7 +317,7 @@ const LifeCertificate = () => {
                         className="w-full pl-10 p-3 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none"
                         required
                       >
-                        <option value="">Select Bank</option>
+                        <option value="">{t.selectBank}</option>
                         {linkedBankAccounts.map(bank => (
                           <option key={bank.id} value={bank.bank}>
                             {bank.bank}
@@ -330,7 +332,7 @@ const LifeCertificate = () => {
                 <div className="md:col-span-2 grid md:grid-cols-2 gap-6">
                   <div className="relative">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Preferred Date
+                      {t.preferredDate}
                     </label>
                     <div className="relative">
                       <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -348,7 +350,7 @@ const LifeCertificate = () => {
 
                   <div className="relative">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Time Slot
+                      {t.timeSlot}
                     </label>
                     <div className="relative">
                       <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -360,7 +362,7 @@ const LifeCertificate = () => {
                         className="w-full pl-10 p-3 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none"
                         required
                       >
-                        <option value="">Select Time Slot</option>
+                        <option value="">{t.selectTimeSlot}</option>
                         {standardTimeSlots.map(slot => (
                           <option key={slot} value={slot}>{slot}</option>
                         ))}
@@ -370,7 +372,7 @@ const LifeCertificate = () => {
 
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Collection Address
+                      {t.collectionAddress}
                     </label>
                     <div className="relative">
                       <MapPin className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
@@ -396,7 +398,7 @@ const LifeCertificate = () => {
                     transition-colors flex items-center justify-center gap-2 text-base font-medium"
                 >
                   <FileCheck className="w-5 h-5" />
-                  Schedule Life Certificate Collection
+                  {t.scheduleLifeCertificate}
                 </motion.button>
               </div>
             </motion.form>
@@ -425,7 +427,7 @@ const LifeCertificate = () => {
             exit={{ opacity: 0, scale: 0.95 }}
           >
             <SuccessPage 
-              message="Your life certificate collection has been scheduled successfully!"
+              message={t.lifeCertificateSuccess}
             />
           </motion.div>
         )}

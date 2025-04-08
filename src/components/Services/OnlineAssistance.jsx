@@ -9,10 +9,12 @@ import { linkedBankAccounts, standardTimeSlots } from '../../data/bankData';
 import { motion } from 'framer-motion';
 import { speak, parseDate, findBestMatch, parseTimeSlot } from '../../utils/voiceUtils';
 import VoiceAssistant from '../Common/VoiceAssistant';
+import { useServiceTranslation } from '../../context/ServiceTranslationContext';
 
 const OnlineAssistance = () => {
   const navigate = useNavigate();
   const { user, loading } = useUser();
+  const t = useServiceTranslation();
 
   const banks = [
     { id: 'SBI', name: 'State Bank of India' },
@@ -25,15 +27,15 @@ const OnlineAssistance = () => {
   const modeOptions = [
     { 
       id: 'telephonic', 
-      label: 'Telephonic Call',
+      label: t.telephonic,
       icon: PhoneCall,
-      description: 'Get assistance through a phone call'
+      description: t.telephonicDesc
     },
     { 
       id: 'gmeet', 
-      label: 'Google Meet',
+      label: t.videoCall,
       icon: Video,
-      description: 'Video call assistance through Google Meet'
+      description: t.videoCallDesc
     }
   ];
 
@@ -188,7 +190,7 @@ const OnlineAssistance = () => {
           >
             {/* Voice Assistant Header */}
             <div className="flex items-center justify-between gap-4 p-4 border-b">
-              <h2 className="text-lg font-semibold">Online Banking Assistance</h2>
+              <h2 className="text-lg font-semibold">{t.onlineAssistance}</h2>
               <VoiceAssistant 
                 onVoiceInput={handleVoiceInput}
                 activeField={activeField}
@@ -201,9 +203,9 @@ const OnlineAssistance = () => {
             {/* Progress Steps */}
             <div className="grid grid-cols-3 border-b">
               {[
-                { key: 'bankDetails', label: 'Bank Selection', icon: Building2 },
-                { key: 'schedule', label: 'Schedule', icon: Calendar },
-                { key: 'personal', label: 'Mode', icon: Phone }
+                { key: 'bankDetails', label: t.bankSelection, icon: Building2 },
+                { key: 'schedule', label: t.schedule, icon: Calendar },
+                { key: 'personal', label: t.mode, icon: Phone }
               ].map((step, index) => (
                 <motion.div
                   key={step.key}
@@ -226,7 +228,7 @@ const OnlineAssistance = () => {
                         {step.label}
                       </p>
                       <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">
-                        {calculateProgress()[step.key] ? 'Completed' : 'Pending'}
+                        {calculateProgress()[step.key] ? t.completed : t.pending}
                       </p>
                     </div>
                   </div>
@@ -247,7 +249,7 @@ const OnlineAssistance = () => {
                 {/* Bank Selection */}
                 <div>
                   <label className="block text-sm sm:text-base md:text-lg font-medium text-gray-700 mb-1.5 sm:mb-2">
-                    Select Bank
+                    {t.selectBank}
                   </label>
                   <div className="relative">
                     <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 w-5 h-5" />
@@ -271,7 +273,7 @@ const OnlineAssistance = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm sm:text-base md:text-lg font-medium text-gray-700 mb-1.5 sm:mb-2">
-                      Date
+                      {t.date}
                     </label>
                     <div className="relative">
                       <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 w-5 h-5" />
@@ -289,7 +291,7 @@ const OnlineAssistance = () => {
 
                   <div>
                     <label className="block text-sm sm:text-base md:text-lg font-medium text-gray-700 mb-1.5 sm:mb-2">
-                      Time Slot
+                      {t.timeSlot}
                     </label>
                     <div className="relative">
                       <Clock className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 w-5 h-5" />
@@ -313,7 +315,7 @@ const OnlineAssistance = () => {
                 {/* Personal Details */}
                 <div>
                   <label className="block text-sm sm:text-base md:text-lg font-medium text-gray-700 mb-1.5 sm:mb-2">
-                    Contact Number
+                    {t.contactNumber}
                   </label>
                   <div className="relative">
                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 w-5 h-5" />
@@ -328,7 +330,7 @@ const OnlineAssistance = () => {
 
                 <div>
                   <label className="block text-sm sm:text-base md:text-lg font-medium text-gray-700 mb-1.5 sm:mb-2">
-                    Full Name
+                    {t.fullName}
                   </label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 w-5 h-5" />
@@ -344,7 +346,7 @@ const OnlineAssistance = () => {
                 {/* Mode Selection */}
                 <div className="md:col-span-2">
                   <label className="block text-sm sm:text-base md:text-lg font-medium text-gray-700 mb-3">
-                    Select Assistance Mode
+                    {t.assistanceMode}
                   </label>
                   <div 
                     className="grid grid-cols-1 sm:grid-cols-2 gap-4"
@@ -398,7 +400,7 @@ const OnlineAssistance = () => {
                   className="md:col-span-2 bg-blue-600 text-white sm:p-5 rounded-lg sm:rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 sm:gap-3 text-base sm:text-lg md:text-xl font-medium"
                 >
                   <Globe className="w-5 h-5 sm:w-6 sm:h-6" />
-                  Schedule Assistance
+                  {t.scheduleAssistance}
                 </motion.button>
               </div>
             </motion.form>
@@ -430,7 +432,7 @@ const OnlineAssistance = () => {
             exit={{ opacity: 0, scale: 0.95 }}
           >
             <SuccessPage 
-              message="Your assistance request has been scheduled successfully!"
+              message={t.assistanceSuccess}
             />
           </motion.div>
         )}

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { X, Clock, Calendar, MapPin, Phone, User, FileText, 
-         DollarSign, AlertCircle, Trash2, CheckCircle, 
+         IndianRupeeIcon, AlertCircle, Trash2, CheckCircle, 
          Building2, Copy, PhoneCall, Loader2 } from 'lucide-react';
 import { formatDate, formatCurrency } from '../../utils/formatters';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -171,7 +171,58 @@ const ServiceDetailsModal = ({ isOpen, onClose, service: initialService, onServi
   const renderAgentSection = () => {
     if (!service) return null;
 
-    if (service.status === 'ASSIGNED') {
+    if (service.status === 'COMPLETED' || service.status === 'COMPLETED') {
+      // Render completion details section
+      return (
+        <div className="p-4 bg-green-50 rounded-xl border border-green-100">
+          <h3 className="font-semibold text-gray-900 flex items-center gap-2 mb-4">
+            <CheckCircle className="w-5 h-5 text-green-600" />
+            Service Completion Details
+          </h3>
+          <div className="bg-white rounded-lg p-4 shadow-sm">
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Completion Info */}
+              <div className="space-y-3">
+                <InfoItem
+                  icon={Calendar}
+                  label="Completed On"
+                  value={formatDate(service.completionDetails?.completedAt || 
+                                   service.assignmentDetails?.completedAt)}
+                />
+                <InfoItem
+                  icon={FileText}
+                  label="Verification Method"
+                  value={formatCompletionMethod(service.completionDetails?.completionMethod)}
+                />
+              </div>
+
+              {/* Agent Info */}
+              <div className="space-y-3 border-l border-gray-100 pl-6">
+                <InfoItem
+                  icon={User}
+                  label="Completed By"
+                  value={service.completionDetails?.agentDetails?.name || 
+                        service.assignmentDetails?.agentInfo?.name || 'Agent'}
+                />
+                {(service.completionDetails?.agentDetails?.phone || 
+                  service.assignmentDetails?.agentInfo?.phone) && (
+                  <div className="flex items-center space-x-2">
+                    <div className="flex-grow">
+                      <InfoItem
+                        icon={Phone}
+                        label="Agent Contact"
+                        value={service.completionDetails?.agentDetails?.phone || 
+                              service.assignmentDetails?.agentInfo?.phone}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    } else if (service.status === 'ASSIGNED') {
       return (
         <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
           <h3 className="font-semibold text-gray-900 flex items-center gap-2 mb-4">
@@ -251,6 +302,19 @@ const ServiceDetailsModal = ({ isOpen, onClose, service: initialService, onServi
     return null;
   };
 
+  // Utility function to format completion method
+  const formatCompletionMethod = (method) => {
+    if (!method) return 'Not specified';
+    
+    const methodMap = {
+      'OTP_VERIFICATION': 'OTP Verification',
+      'AGENT_CONFIRMATION': 'Agent Confirmation',
+      'ADMIN_OVERRIDE': 'Admin Approval'
+    };
+    
+    return methodMap[method] || method.replace(/_/g, ' ');
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -321,7 +385,7 @@ const ServiceDetailsModal = ({ isOpen, onClose, service: initialService, onServi
                         value={service.serviceType?.replace(/_/g, ' ')}
                       />
                       <InfoItem
-                        icon={DollarSign}
+                        icon={IndianRupeeIcon}
                         label="Amount"
                         value={formatCurrency(service.amount)}
                       />
@@ -369,7 +433,36 @@ const ServiceDetailsModal = ({ isOpen, onClose, service: initialService, onServi
 
                 {/* Middle Column - Agent Info */}
                 <div className="bg-gray-50 rounded-xl p-5">
-                  {service.status === 'ASSIGNED' ? (
+                  {service.status === 'COMPLETED' ? (
+                    <>
+                      <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-4">
+                        <CheckCircle className="w-5 h-5 text-green-600" />
+                        Completed Service
+                      </h3>
+                      <div className="bg-white rounded-lg p-5 shadow-sm space-y-4">
+                        <InfoItem
+                          icon={Calendar}
+                          label="Completed On"
+                          value={formatDate(service.completionDetails?.completedAt || 
+                                           service.assignmentDetails?.completedAt)}
+                          larger
+                        />
+                        <InfoItem
+                          icon={User}
+                          label="Completed By"
+                          value={service.completionDetails?.agentDetails?.name || 
+                                service.assignmentDetails?.agentInfo?.name || 'Agent'}
+                          larger
+                        />
+                        <InfoItem
+                          icon={FileText}
+                          label="Verification"
+                          value={formatCompletionMethod(service.completionDetails?.completionMethod)}
+                          larger
+                        />
+                      </div>
+                    </>
+                  ) : service.status === 'ASSIGNED' ? (
                     <>
                       <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-4">
                         <User className="w-5 h-5 text-blue-600" />

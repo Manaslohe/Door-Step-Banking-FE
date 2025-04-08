@@ -11,19 +11,33 @@ import FeedbackPopup from './FeedbackPopup';  // Add this import
 
 const Sidebar = ({ isOpen, isMinimized, isMobile, toggleSidebar }) => {
   const { t } = useTranslation();
+
+  // Add fallback for navigation items
+  const navigationItems = t?.navigation || {
+    home: 'Home',
+    userProfile: 'User Profile',
+    servicesOffered: 'Banking Services',
+    rbiGuidelines: 'RBI Guidelines',
+    blogForum: 'Blog/Forum',
+    pricingStructure: 'Pricing Structure',
+    trackService: 'Track Service',
+    trackTicket: 'Track Ticket',
+    support: 'Support'
+  };
+
   const navigate = useNavigate();
   const [showFeedback, setShowFeedback] = useState(false);
   
   const navItems = [
-    { path: '/dashboard', icon: Home, text: t.navigation.home },
-    { path: '/user-dashboard', icon: Users, text: t.navigation.userProfile },
-    { path: '/services-offered', icon: Settings, text: t.navigation.servicesOffered },
-    { path: '/rbi-guidelines', icon: BookOpen, text: t.navigation.rbiGuidelines },
-    { path: '/blog-forum', icon: MessageSquare, text: t.navigation.blogForum },
-    { path: '/pricing-structure', icon: DollarSign, text: t.navigation.pricingStructure },
+    { path: '/dashboard', icon: Home, text: navigationItems.home },
+    { path: '/user-dashboard', icon: Users, text: navigationItems.userProfile },
+    { path: '/services-offered', icon: Settings, text: navigationItems.servicesOffered },
+    { path: '/rbi-guidelines', icon: BookOpen, text: navigationItems.rbiGuidelines },
+    { path: '/blog-forum', icon: MessageSquare, text: navigationItems.blogForum },
+    { path: '/pricing-structure', icon: DollarSign, text: navigationItems.pricingStructure },
     { path: '/track-service', icon: Clock, text: t.tracking.service.title },
     { path: '/track-ticket', icon: FileText, text: t.tracking.ticket.title },
-    { path: '/support', icon: HelpCircle, text: t.navigation.support }
+    { path: '/support', icon: HelpCircle, text: navigationItems.support }
   ];
 
   // Mobile-only: Hide completely when closed

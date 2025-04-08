@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Users, AlertTriangle, Shield, Clock } from 'lucide-react';
 
 export const translations = {
@@ -422,6 +422,47 @@ export const translations = {
         fee: "Service Fee",
         specifications: "Specifications"
       }
+    },
+    ticketDetails: {
+      title: 'Ticket Details',
+      loading: 'Loading ticket details...',
+      ticketId: 'Ticket ID',
+      type: 'Type',
+      message: 'Message',
+      contactInformation: 'Contact Information',
+      created: 'Created',
+      status: 'Status',
+      priority: 'Priority',
+      close: 'Close',
+      update: 'Update',
+      at: 'at'
+    },
+    ticketTracking: {
+      title: 'Support Tickets',
+      subtitle: 'Track and manage your support requests',
+      stats: {
+        totalTickets: 'Total Tickets',
+        openTickets: 'Open Tickets'
+      },
+      search: {
+        placeholder: 'Search tickets by ID, message or type...'
+      },
+      filters: {
+        allStatuses: 'All Statuses'
+      },
+      table: {
+        ticketId: 'Ticket ID',
+        type: 'Type',
+        message: 'Message',
+        priority: 'Priority',
+        status: 'Status',
+        created: 'Created'
+      },
+      loading: 'Loading your tickets...',
+      noTickets: {
+        title: 'No tickets found',
+        subtitle: 'Try adjusting your search or filters'
+      }
     }
   },
   hindi: {
@@ -842,6 +883,47 @@ export const translations = {
         fee: "सेवा शुल्क",
         specifications: "विनिर्देश"
       }
+    },
+    ticketDetails: {
+      title: 'टिकट विवरण',
+      loading: 'टिकट विवरण लोड हो रहा है...',
+      ticketId: 'टिकट आईडी',
+      type: 'प्रकार',
+      message: 'संदेश',
+      contactInformation: 'संपर्क जानकारी',
+      created: 'बनाया गया',
+      status: 'स्थिति',
+      priority: 'प्राथमिकता',
+      close: 'बंद करें',
+      update: 'अपडेट करें',
+      at: 'को'
+    },
+    ticketTracking: {
+      title: 'सहायता टिकट',
+      subtitle: 'अपने सहायता अनुरोधों को ट्रैक और प्रबंधित करें',
+      stats: {
+        totalTickets: 'कुल टिकट',
+        openTickets: 'खुले टिकट'
+      },
+      search: {
+        placeholder: 'आईडी, संदेश या प्रकार द्वारा टिकट खोजें...'
+      },
+      filters: {
+        allStatuses: 'सभी स्थितियां'
+      },
+      table: {
+        ticketId: 'टिकट आईडी',
+        type: 'प्रकार',
+        message: 'संदेश',
+        priority: 'प्राथमिकता',
+        status: 'स्थिति',
+        created: 'बनाया गया'
+      },
+      loading: 'आपके टिकट लोड हो रहे हैं...',
+      noTickets: {
+        title: 'कोई टिकट नहीं मिला',
+        subtitle: 'अपनी खोज या फ़िल्टर समायोजित करें'
+      }
     }
   }
 };
@@ -849,11 +931,31 @@ export const translations = {
 const TranslationContext = createContext();
 
 export const TranslationProvider = ({ children }) => {
-  const [language, setLanguage] = useState('english');
-  const t = translations[language];
+  const [currentLanguage, setCurrentLanguage] = useState(
+    localStorage.getItem('language') || 'en'
+  );
+
+  const toggleLanguage = () => {
+    const newLang = currentLanguage === 'en' ? 'hi' : 'en';
+    setCurrentLanguage(newLang);
+    localStorage.setItem('language', newLang);
+    window.dispatchEvent(new Event('languagechange'));
+  };
+
+  useEffect(() => {
+    localStorage.setItem('language', currentLanguage);
+  }, [currentLanguage]);
+
+  const t = currentLanguage === 'en' ? translations.english : translations.hindi;
+
+  const value = {
+    currentLanguage,
+    toggleLanguage,
+    t
+  };
 
   return (
-    <TranslationContext.Provider value={{ language, setLanguage, t }}>
+    <TranslationContext.Provider value={value}>
       {children}
     </TranslationContext.Provider>
   );

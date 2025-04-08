@@ -13,15 +13,15 @@ import { useTranslation } from '../../context/TranslationContext';
 const ContactCard = ({ icon: Icon, text, info, onClick }) => (
   <div 
     onClick={onClick}
-    className="p-4 bg-white border border-blue-100 rounded-xl hover:shadow-md transition-all duration-300 cursor-pointer group"
+    className="p-5 bg-white border border-blue-100 rounded-2xl hover:shadow-lg transition-all duration-300 cursor-pointer group transform hover:-translate-y-1"
   >
-    <div className="flex items-start space-x-3">
-      <div className="p-2 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
+    <div className="flex items-start space-x-4">
+      <div className="p-3 bg-blue-50 rounded-xl group-hover:bg-blue-100 transition-all duration-300">
         <Icon className="w-6 h-6 text-blue-600" />
       </div>
       <div>
-        <h3 className="font-medium text-gray-900">{text}</h3>
-        <p className="text-sm text-blue-600 mt-1">{info}</p>
+        <h3 className="font-semibold text-gray-900">{text}</h3>
+        <p className="text-sm text-blue-600 mt-1.5">{info}</p>
       </div>
     </div>
   </div>
@@ -37,7 +37,7 @@ const SuccessModal = ({ isOpen, onClose, ticketInfo }) => {
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-2">
             <CheckCircle className="w-6 h-6 text-green-500" />
-            <h3 className="text-xl font-semibold text-gray-900">{t.supportSection.success.title}</h3>
+            <h3 className="text-xl font-semibold text-gray-900">{t.support.success.title}</h3>
           </div>
           <button 
             onClick={onClose} 
@@ -174,54 +174,54 @@ const Support = () => {
 
   return (
     <DashboardLayout>
-      <div className="min-h-fit bg-gray-50">
-        <div className="p-6 h-full">
-          <div className="max-w-4xl mx-auto space-y-6">
+      <div className="min-h-fit bg-gradient-to-b from-gray-50 to-white">
+        <div className="px-4 sm:px-6 py-8">
+          <div className="max-w-4xl mx-auto space-y-8">
             {/* Contact Methods */}
-            <div className="grid md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {contactMethods.map((method, index) => (
                 <ContactCard key={index} {...method} />
               ))}
             </div>
 
             {/* Ticket Form */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <div className="flex items-center justify-between mb-6">
+            <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6 sm:p-8">
+              <div className="flex items-center justify-between mb-8">
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-900">{t.support.ticketSystem.title}</h2>
-                  <p className="text-gray-600 text-sm mt-1">{t.support.ticketSystem.subtitle}</p>
+                  <h2 className="text-2xl font-bold text-gray-900">{t.support.ticketSystem.title}</h2>
+                  <p className="text-gray-600 mt-2">{t.support.ticketSystem.subtitle}</p>
                 </div>
-                <ArrowRight className="w-5 h-5 text-blue-600" />
+                <ArrowRight className="w-6 h-6 text-blue-600" />
               </div>
               
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.support.ticketSystem.form.name}</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">{t.support.ticketSystem.form.name}</label>
                     <input 
                       type="text" 
                       value={`${user?.firstName || ''} ${user?.lastName || ''}`}
                       disabled
-                      className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-600"
+                      className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-600 focus:ring-2 focus:ring-blue-500 transition-all duration-300"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.support.ticketSystem.form.contactNumber}</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">{t.support.ticketSystem.form.contactNumber}</label>
                     <input 
                       type="text" 
                       value={user?.phone || ''}
                       disabled
-                      className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-600"
+                      className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-600 focus:ring-2 focus:ring-blue-500 transition-all duration-300"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t.support.ticketSystem.form.ticketType}</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">{t.support.ticketSystem.form.ticketType}</label>
                   <select
                     value={ticketType}
                     onChange={(e) => setTicketType(e.target.value)}
-                    className="w-full p-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
                     required
                   >
                     {ticketTypes.map(type => (
@@ -233,11 +233,11 @@ const Support = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t.support.ticketSystem.form.message}</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">{t.support.ticketSystem.form.message}</label>
                   <textarea 
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    className="w-full p-2.5 border border-gray-200 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full p-3 border border-gray-200 rounded-xl resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
                     rows={6}
                     placeholder={t.support.ticketSystem.form.messagePlaceholder}
                     required
@@ -245,7 +245,7 @@ const Support = () => {
                 </div>
 
                 {error && (
-                  <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
+                  <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-medium">
                     {error}
                   </div>
                 )}
@@ -253,17 +253,17 @@ const Support = () => {
                 <button 
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 text-white px-8 py-3 rounded-xl hover:bg-blue-700 transform hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 shadow-md hover:shadow-xl"
                 >
                   {isSubmitting ? (
                     <>
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>{t.support.ticketSystem.form.submitting}</span>
+                      <span className="font-medium">{t.support.ticketSystem.form.submitting}</span>
                     </>
                   ) : (
                     <>
                       <Send className="w-5 h-5" />
-                      <span>{t.support.ticketSystem.form.submit}</span>
+                      <span className="font-medium">{t.support.ticketSystem.form.submit}</span>
                     </>
                   )}
                 </button>

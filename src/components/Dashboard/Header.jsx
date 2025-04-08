@@ -19,6 +19,7 @@ const Header = ({
   isMobile,
   isSidebarOpen // Add this prop
 }) => {
+  const { t } = useTranslation();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -27,7 +28,6 @@ const Header = ({
   const location = useLocation();
   const { user, loading, error, setUser } = useUser(); // Destructure setUser from useUser hook
   const [fullName, setFullName] = useState('Loading...');
-  const { t } = useTranslation();
 
   useEffect(() => {
     if (!loading) {
@@ -159,7 +159,7 @@ const Header = ({
                 group transition-colors px-2 lg:px-3 py-2 rounded-lg hover:bg-white/10"
             >
               <ChevronLeft className="w-5 h-5 lg:w-6 lg:h-6 group-hover:-translate-x-1 transition-transform" />
-              <span className="text-sm lg:text-base font-medium">{t.back}</span>
+              <span className="text-sm lg:text-base font-medium">{t?.back || 'Back'}</span>
             </button>
           )}
         </div>

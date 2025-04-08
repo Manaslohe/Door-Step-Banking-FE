@@ -10,12 +10,14 @@ import { useServiceRequest } from '../../hooks/useServiceRequest';
 import { linkedBankAccounts, standardTimeSlots } from '../../data/bankData';
 import { speak, parseDate, findBestMatch, parseTimeSlot } from '../../utils/voiceUtils';
 import VoiceAssistant from '../Common/VoiceAssistant';
+import { useServiceTranslation } from '../../context/ServiceTranslationContext';
 
 const DocumentService = () => {
   const navigate = useNavigate();
   const { user } = useUser();
   const [selectedService, setSelectedService] = useState('collect');
   const [activeField, setActiveField] = useState(null);
+  const t = useServiceTranslation();
   
   // Add document type options
   const documentTypes = [
@@ -258,7 +260,9 @@ const DocumentService = () => {
           >
             {/* Add Voice Assistant */}
             <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="text-lg font-semibold">Document {selectedService === 'collect' ? 'Collection' : 'Delivery'}</h2>
+              <h2 className="text-lg font-semibold">
+                {t.documentService} - {selectedService === 'collect' ? t.collection : t.delivery}
+              </h2>
               <VoiceAssistant 
                 onVoiceInput={handleVoiceInput}
                 activeField={activeField}
@@ -282,7 +286,7 @@ const DocumentService = () => {
                   }`}
                 >
                   <Download className="w-6 h-6" />
-                  <span className="font-medium text-base">Collection</span>
+                  <span className="font-medium text-base">{t.documentCollection}</span>
                 </motion.button>
                 <motion.button 
                   whileHover={{ scale: 1.02 }}
@@ -295,7 +299,7 @@ const DocumentService = () => {
                   }`}
                 >
                   <Send className="w-6 h-6" />
-                  <span className="font-medium text-base">Delivery</span>
+                  <span className="font-medium text-base">{t.documentDelivery}</span>
                 </motion.button>
               </div>
             </div>
@@ -303,9 +307,9 @@ const DocumentService = () => {
             {/* Progress Steps - Updated text sizes */}
             <div className="grid grid-cols-3 border-b">
               {[
-                { key: 'serviceType', label: 'Bank Account', icon: Building2 },
-                { key: 'address', label: selectedService === 'collect' ? 'Collection' : 'Delivery', icon: MapPin },
-                { key: 'schedule', label: 'Schedule', icon: Calendar }
+                { key: 'serviceType', label: t.bankDetails, icon: Building2 },
+                { key: 'address', label: selectedService === 'collect' ? t.collectionAddress : t.deliveryAddress, icon: MapPin },
+                { key: 'schedule', label: t.appointment, icon: Calendar }
               ].map((step, index) => (
                 <motion.div
                   key={step.key}
@@ -328,7 +332,7 @@ const DocumentService = () => {
                         {step.label}
                       </p>
                       <p className="text-sm text-gray-600 hidden sm:block">
-                        {calculateProgress()[step.key] ? 'Completed' : 'Pending'}
+                        {calculateProgress()[step.key] ? t.completed : t.pending}
                       </p>
                     </div>
                   </div>
@@ -346,7 +350,7 @@ const DocumentService = () => {
                 {/* Bank Account Selection */}
                 <div className="md:col-span-2">
                   <label className="block text-base font-medium text-gray-700 mb-2">
-                    Select Bank Account
+                    {t.selectBank}
                   </label>
                   <div className="relative">
                     <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -358,7 +362,7 @@ const DocumentService = () => {
                       required
                       onFocus={() => handleFieldFocus('bankAccount')}
                     >
-                      <option value="">Select Bank Account</option>
+                      <option value="">{t.selectBank}</option>
                       {bankAccounts.map(acc => (
                         <option key={acc.id} value={acc.id}>
                           {acc.fullName} - {acc.accountNo}
@@ -371,7 +375,7 @@ const DocumentService = () => {
                 {/* Document Type Selection */}
                 <div className="md:col-span-2">
                   <label className="block text-base font-medium text-gray-700 mb-2">
-                    Document Type
+                    {t.documentType}
                   </label>
                   <div className="relative">
                     <FileText className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -395,7 +399,7 @@ const DocumentService = () => {
                 {/* Address Section */}
                 <div className="md:col-span-2">
                   <label className="block text-base font-medium text-gray-700 mb-2">
-                    {selectedService === 'collect' ? 'Collection Address' : 'Delivery Address'}
+                    {selectedService === 'collect' ? t.collectionAddress : t.deliveryAddress}
                   </label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-4 text-gray-400 w-5 h-5" />
@@ -406,7 +410,7 @@ const DocumentService = () => {
                       className="w-full pl-10 p-3.5 text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
                       rows="2" // Reduced rows
                       required
-                      placeholder={`Enter ${selectedService === 'collect' ? 'collection' : 'delivery'} address`}
+                      placeholder={`Enter ${selectedService === 'collect' ? t.collectionAddress : t.deliveryAddress}`}
                       onFocus={() => handleFieldFocus(selectedService === 'collect' ? 'collectionAddress' : 'deliveryAddress')}
                     />
                   </div>
@@ -416,7 +420,7 @@ const DocumentService = () => {
                 <div className="md:col-span-2 grid md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-base font-medium text-gray-700 mb-2">
-                      Preferred Date
+                      {t.preferredDate}
                     </label>
                     <div className="relative">
                       <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -434,7 +438,7 @@ const DocumentService = () => {
                   </div>
                   <div>
                     <label className="block text-base font-medium text-gray-700 mb-2">
-                      Time Slot
+                      {t.timeSlot}
                     </label>
                     <div className="relative">
                       <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -446,7 +450,7 @@ const DocumentService = () => {
                         required
                         onFocus={() => handleFieldFocus('timeSlot')}
                       >
-                        <option value="">Select Time Slot</option>
+                        <option value="">{t.selectTimeSlot}</option>
                         {standardTimeSlots.map(slot => (
                           <option key={slot} value={slot}>{slot}</option>
                         ))}
@@ -463,7 +467,7 @@ const DocumentService = () => {
                   className="md:col-span-2 bg-blue-600 text-white p-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-3 text-lg font-medium"
                 >
                   <FileText className="w-6 h-6" />
-                  Schedule {selectedService === 'collect' ? 'Collection' : 'Delivery'}
+                  {t.scheduleAppointment}
                 </motion.button>
               </div>
             </motion.form>
@@ -492,7 +496,9 @@ const DocumentService = () => {
             exit={{ opacity: 0, scale: 0.95 }}
           >
             <SuccessPage 
-              message={`Your document ${selectedService === 'collect' ? 'collection' : 'delivery'} request has been scheduled successfully!`}
+              message={t.documentSuccess.replace('{type}', 
+                selectedService === 'collect' ? t.collection : t.delivery
+              )}
             />
           </motion.div>
         )}

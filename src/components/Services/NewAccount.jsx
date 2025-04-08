@@ -10,6 +10,7 @@ import { useServiceRequest } from '../../hooks/useServiceRequest';
 import { banksList, standardTimeSlots } from '../../data/bankData';
 import { speak, parseDate, findBestMatch, parseTimeSlot } from '../../utils/voiceUtils';
 import VoiceAssistant from '../Common/VoiceAssistant';
+import { useServiceTranslation } from '../../context/ServiceTranslationContext';
 
 const NewAccount = () => {
   const navigate = useNavigate();
@@ -29,6 +30,7 @@ const NewAccount = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const { createServiceRequest } = useServiceRequest();
   const [activeField, setActiveField] = useState(null);
+  const t = useServiceTranslation();
 
   useEffect(() => {
     if (user) {
@@ -247,7 +249,7 @@ const NewAccount = () => {
           >
             {/* Voice Assistant Header */}
             <div className="flex items-center justify-between gap-4 p-4 border-b">
-              <h2 className="text-lg font-semibold">New Account Opening</h2>
+              <h2 className="text-lg font-semibold">{t.newAccount}</h2>
               <VoiceAssistant 
                 onVoiceInput={handleVoiceInput}
                 activeField={activeField}
@@ -260,9 +262,9 @@ const NewAccount = () => {
             {/* Progress Steps */}
             <div className="grid grid-cols-3 border-b">
               {[
-                { key: 'personalInfo', label: 'Personal Info', icon: UserPlus },
-                { key: 'bankDetails', label: 'Bank Details', icon: Building2 },
-                { key: 'appointment', label: 'Appointment', icon: Calendar }
+                { key: 'personalInfo', label: t.personalInfo, icon: UserPlus },
+                { key: 'bankDetails', label: t.bankDetails, icon: Building2 },
+                { key: 'appointment', label: t.appointment, icon: Calendar }
               ].map((step, index) => (
                 <motion.div
                   key={step.key}
@@ -285,7 +287,7 @@ const NewAccount = () => {
                         {step.label}
                       </p>
                       <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">
-                        {calculateProgress()[step.key] ? 'Completed' : 'Pending'}
+                        {calculateProgress()[step.key] ? t.completed : t.pending}
                       </p>
                     </div>
                   </div>
@@ -304,7 +306,7 @@ const NewAccount = () => {
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1">First Name</label>
+                      <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1">{t.firstName}</label>
                       <input
                         type="text"
                         name="firstName"
@@ -316,7 +318,7 @@ const NewAccount = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1">Last Name</label>
+                      <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1">{t.lastName}</label>
                       <input
                         type="text"
                         name="lastName"
@@ -330,7 +332,7 @@ const NewAccount = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1">Email</label>
+                    <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1">{t.email}</label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                       <input
@@ -346,7 +348,7 @@ const NewAccount = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1">Phone</label>
+                    <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1">{t.phone}</label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                       <input
@@ -365,7 +367,7 @@ const NewAccount = () => {
                 {/* Bank Details Section */}
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1">Select Bank</label>
+                    <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1">{t.selectBank}</label>
                     <div className="relative">
                       <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                       <select
@@ -376,7 +378,7 @@ const NewAccount = () => {
                         required
                         onFocus={() => handleFieldFocus('bankId')}
                       >
-                        <option value="">Select Bank</option>
+                        <option value="">{t.selectBank}</option>
                         {banksList.map(bank => (
                           <option key={bank.id} value={bank.id}>{bank.name}</option>
                         ))}
@@ -385,7 +387,7 @@ const NewAccount = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1">Account Type</label>
+                    <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1">{t.accountType}</label>
                     <select
                       name="accountType"
                       value={formData.accountType}
@@ -394,16 +396,16 @@ const NewAccount = () => {
                       required
                       onFocus={() => handleFieldFocus('accountType')}
                     >
-                      <option value="">Select Account Type</option>
-                      <option value="savings">Savings Account</option>
-                      <option value="current">Current Account</option>
-                      <option value="fixed">Fixed Deposit</option>
+                      <option value="">{t.selectAccountType}</option>
+                      <option value="savings">{t.savingsAccount}</option>
+                      <option value="current">{t.currentAccount}</option>
+                      <option value="fixed">{t.fixedDeposit}</option>
                     </select>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1">Visit Date</label>
+                      <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1">{t.visitDate}</label>
                       <div className="relative">
                         <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                         <input
@@ -419,7 +421,7 @@ const NewAccount = () => {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1">Time Slot</label>
+                      <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1">{t.timeSlot}</label>
                       <div className="relative">
                         <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                         <select
@@ -430,7 +432,7 @@ const NewAccount = () => {
                           required
                           onFocus={() => handleFieldFocus('timeSlot')}
                         >
-                          <option value="">Select Time</option>
+                          <option value="">{t.selectTime}</option>
                           {timeSlots.map(slot => (
                             <option key={slot} value={slot}>{slot}</option>
                           ))}
@@ -442,7 +444,7 @@ const NewAccount = () => {
 
                 {/* Visit Address - Full Width */}
                 <div className="md:col-span-2">
-                  <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1">Visit Address</label>
+                  <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1">{t.visitAddress}</label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-4 text-gray-400 w-5 h-5" />
                     <textarea
@@ -465,7 +467,7 @@ const NewAccount = () => {
                   className="md:col-span-2 bg-blue-600 text-white p-4 sm:p-5 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 text-base sm:text-lg font-medium"
                 >
                   <Calendar className="w-5 h-5 sm:w-6 sm:h-6" />
-                  Schedule Appointment
+                  {t.scheduleAppointment}
                 </motion.button>
               </div>
             </motion.form>
@@ -483,7 +485,7 @@ const NewAccount = () => {
 
         {showSuccess && (
           <SuccessPage 
-            message="Your new account request has been scheduled successfully!"
+            message={t.accountSuccess}
           />
         )}
       </motion.div>

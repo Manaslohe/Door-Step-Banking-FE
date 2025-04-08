@@ -10,6 +10,7 @@ import { linkedBankAccounts, standardTimeSlots } from '../../data/bankData';
 import { motion } from 'framer-motion';
 import VoiceAssistant from '../Common/VoiceAssistant';
 import { speak, parseDate, findBestMatch, parseTimeSlot } from '../../utils/voiceUtils';
+import { useServiceTranslation } from '../../context/ServiceTranslationContext';
 
 const CashWithdrawal = () => {
   const navigate = useNavigate();
@@ -35,6 +36,7 @@ const CashWithdrawal = () => {
   const [showOtpPopup, setShowOtpPopup] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [activeField, setActiveField] = useState(null);
+  const t = useServiceTranslation();
 
   const handleInputChange = (e) => {
     if (e.target.name === 'bankAccount') {
@@ -225,7 +227,7 @@ const CashWithdrawal = () => {
           >
             {/* Voice Assistant Header */}
             <div className="flex items-center justify-between gap-4 p-4 border-b">
-              <h2 className="text-lg font-semibold">Cash Withdrawal Service</h2>
+              <h2 className="text-lg font-semibold">{t.cashWithdrawal}</h2>
               <VoiceAssistant 
                 onVoiceInput={handleVoiceInput}
                 activeField={activeField}
@@ -238,9 +240,9 @@ const CashWithdrawal = () => {
             {/* Progress Steps */}
             <div className="grid grid-cols-3 border-b">
               {[
-                { key: 'bankDetails', label: 'Bank Details', icon: Building2 },
-                { key: 'delivery', label: 'Delivery', icon: MapPin },
-                { key: 'amount', label: 'Amount', icon: DollarSign }
+                { key: 'bankDetails', label: t.bankDetails, icon: Building2 },
+                { key: 'delivery', label: t.address, icon: MapPin },
+                { key: 'amount', label: t.withdrawalAmount, icon: DollarSign }
               ].map((step, index) => (
                 <motion.div
                   key={step.key}
@@ -269,7 +271,7 @@ const CashWithdrawal = () => {
                         {step.label}
                       </p>
                       <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">
-                        {calculateProgress()[step.key] ? 'Completed' : 'Pending'}
+                        {calculateProgress()[step.key] ? t.completed : t.pending}
                       </p>
                     </div>
                   </div>
@@ -288,7 +290,7 @@ const CashWithdrawal = () => {
                 <div className="space-y-4 sm:space-y-6">
                   <div>
                     <label className="block text-sm sm:text-base md:text-lg font-medium text-gray-700 mb-1.5 sm:mb-2">
-                      Select Bank Account
+                      {t.selectBank}
                     </label>
                     <select
                       name="bankAccount"
@@ -298,7 +300,7 @@ const CashWithdrawal = () => {
                       value={formData.bankAccount}
                       required
                     >
-                      <option value="">Select Bank Account</option>
+                      <option value="">{t.selectBank}</option>
                       {bankAccounts.map(acc => (
                         <option key={acc.id} value={acc.id}>
                           {acc.bank} - {acc.accountNo}
@@ -309,7 +311,7 @@ const CashWithdrawal = () => {
 
                   <div>
                     <label className="block text-sm sm:text-base md:text-lg font-medium text-gray-700 mb-1.5 sm:mb-2">
-                      IFSC Code
+                      {t.ifscCode}
                     </label>
                     <input
                       type="text"
@@ -325,7 +327,7 @@ const CashWithdrawal = () => {
                 <div className="space-y-4 sm:space-y-6">
                   <div>
                     <label className="block text-sm sm:text-base md:text-lg font-medium text-gray-700 mb-1.5 sm:mb-2">
-                      Withdrawal Address
+                      {t.withdrawalAddress}
                     </label>
                     <div className="relative">
                       <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -333,7 +335,7 @@ const CashWithdrawal = () => {
                         type="text"
                         name="withdrawalAddress"
                         value={formData.withdrawalAddress}
-                        placeholder="Enter your complete address"
+                        placeholder={t.enterAddress}
                         className="w-full pl-10 p-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
                         onChange={handleInputChange}
                         onFocus={() => handleFieldFocus('withdrawalAddress')}
@@ -345,7 +347,7 @@ const CashWithdrawal = () => {
                   <div className="grid grid-cols-2 gap-4 sm:gap-6">
                     <div>
                       <label className="block text-sm sm:text-base md:text-lg font-medium text-gray-700 mb-1.5 sm:mb-2">
-                        Date
+                        {t.date}
                       </label>
                       <div className="relative">
                         <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -362,7 +364,7 @@ const CashWithdrawal = () => {
                     </div>
                     <div>
                       <label className="block text-sm sm:text-base md:text-lg font-medium text-gray-700 mb-1.5 sm:mb-2">
-                        Time Slot
+                        {t.timeSlot}
                       </label>
                       <div className="relative">
                         <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -374,7 +376,7 @@ const CashWithdrawal = () => {
                           onFocus={() => handleFieldFocus('timeSlot')}
                           required
                         >
-                          <option value="">Select Time</option>
+                          <option value="">{t.selectTime}</option>
                           {standardTimeSlots.map(slot => (
                             <option key={slot} value={slot}>{slot}</option>
                           ))}
@@ -387,7 +389,7 @@ const CashWithdrawal = () => {
                 {/* Amount Section */}
                 <div className="md:col-span-2">
                   <label className="block text-sm sm:text-base md:text-lg font-medium text-gray-700 ">
-                    Withdrawal Amount
+                    {t.withdrawalAmount}
                   </label>
                   <div className="relative">
                     <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -395,7 +397,7 @@ const CashWithdrawal = () => {
                       type="number"
                       name="amount"
                       value={formData.amount}
-                      placeholder="Enter amount"
+                      placeholder={t.enterAmount}
                       className="w-full pl-10 p-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
                       onChange={handleInputChange}
                       onFocus={() => handleFieldFocus('amount')}
@@ -412,7 +414,7 @@ const CashWithdrawal = () => {
                   className="md:col-span-2 bg-blue-600 text-white p-4 sm:p-5 rounded-lg sm:rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 sm:gap-3 text-base sm:text-lg md:text-xl font-medium"
                 >
                   <CreditCard className="w-5 h-5 sm:w-6 sm:h-6" />
-                  Schedule Withdrawal
+                  {t.scheduleWithdrawal}
                 </motion.button>
               </div>
             </motion.form>
@@ -441,7 +443,7 @@ const CashWithdrawal = () => {
             exit={{ opacity: 0, scale: 0.95 }}
           >
             <SuccessPage 
-              message="Your cash withdrawal request has been scheduled successfully!"
+              message={t.withdrawalSuccess}
             />
           </motion.div>
         )}
