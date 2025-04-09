@@ -3,7 +3,8 @@ import { Mic, Volume2, Square, MicOff, VolumeX, HelpCircle, BookOpen } from 'luc
 import { motion, AnimatePresence } from 'framer-motion';
 import Toast from '../Admin/Toast';
 import { getServiceExplanation } from '../../utils/serviceDescriptions';
-import { speak } from '../../utils/voiceUtils'; // Add this import
+import { speak } from '../../utils/voiceUtils';
+import { useTranslation } from '../../context/TranslationContext';
 
 // Internal Button Component
 const VoiceControlButton = ({ 
@@ -103,13 +104,14 @@ const VoiceAssistant = ({
   activeField,
   feedbackEnabled = true,
   size = 'md',
-  serviceType = 'CASH_DEPOSIT' // Add serviceType prop
+  serviceType = 'CASH_DEPOSIT'
 }) => {
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [voiceFeedback, setVoiceFeedback] = useState(true);
   const [toast, setToast] = useState(null);
   const [isExplaining, setIsExplaining] = useState(false);
+  const { currentLanguage } = useTranslation();
 
   useEffect(() => {
     // Clean up any active speech or recognition on unmount
@@ -206,13 +208,13 @@ const VoiceAssistant = ({
 
     try {
       setIsExplaining(true);
-      const explanation = getServiceExplanation(serviceType);
+      const explanation = getServiceExplanation(serviceType, currentLanguage);
       
       if (!explanation) {
         throw new Error('No explanation available for this service');
       }
 
-      await speak(explanation);
+      await speak(explanation, currentLanguage);
     } catch (error) {
       console.error('Explanation error:', error);
       if (error.error === 'interrupted') {

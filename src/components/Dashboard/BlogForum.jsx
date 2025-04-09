@@ -8,8 +8,7 @@ import {
   Send,
   Clock,
   ChevronUp,
-  ChevronDown,
-  CheckCircle
+  ChevronDown
 } from 'lucide-react';
 import DashboardLayout from './DashboardLayout';
 import { useTranslation } from '../../context/TranslationContext';
@@ -17,7 +16,7 @@ import { useTranslation } from '../../context/TranslationContext';
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 const LoadingCard = () => (
-  <div className="bg-white rounded-xl shadow-sm p-6 animate-pulse border border-gray-100">
+  <div className="bg-white rounded-xl shadow-sm p-6 animate-pulse border border-gray-100 w-full">
     <div className="flex gap-3 mb-4">
       <div className="w-28 h-6 bg-gray-200 rounded-full"></div>
       <div className="w-20 h-6 bg-gray-200 rounded-full"></div>
@@ -39,7 +38,7 @@ const BlogCard = ({ blog, onLike }) => {
   const cleanContent = blog.content.replace(/\*\*(.*?)\*\*/g, '$1');
 
   return (
-    <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 overflow-hidden">
+    <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 overflow-hidden w-full">
       <div className="p-6">
         <div className="flex items-center gap-3 mb-4">
           <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium 
@@ -116,21 +115,28 @@ const BlogCard = ({ blog, onLike }) => {
   );
 };
 
-const CreateBlogModal = ({ isOpen, onClose }) => {
+const CreateBlogModal = ({ isOpen, onClose, onCreateBlog }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [showSuccess, setShowSuccess] = useState(false);
   const { t } = useTranslation();
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    setShowSuccess(true);
-    setTimeout(() => {
-      setShowSuccess(false);
-      onClose();
-      setTitle('');
-      setContent('');
-    }, 2000);
+    const newBlog = {
+      id: Date.now(),
+      title,
+      content,
+      author: "You",
+      likes: 0,
+      isLiked: false,
+      category: t.blog.categories.personalFinance,
+      readTime: `${Math.floor(Math.random() * 5 + 2)} ${t.blog.minRead}`
+    };
+    
+    onCreateBlog(newBlog);
+    onClose();
+    setTitle('');
+    setContent('');
   };
 
   if (!isOpen) return null;
@@ -142,62 +148,47 @@ const CreateBlogModal = ({ isOpen, onClose }) => {
       <div className={`bg-white rounded-2xl p-6 max-w-lg w-full mx-4 shadow-2xl
         transition-all duration-300 transform
         ${isOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
-        {showSuccess ? (
-          <div className="text-center py-6 animate-[fadeIn_0.5s_ease-out]">
-            <div className="w-14 h-14 bg-green-100 rounded-full flex items-center 
-              justify-center mx-auto mb-4 animate-[scaleIn_0.5s_ease-out]">
-              <CheckCircle className="w-7 h-7 text-green-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Blog Posted Successfully!</h3>
-            <p className="text-gray-600 text-sm">Your blog has been shared with the community.</p>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold text-gray-900">Create New Blog</h2>
+          <button 
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 p-1.5 hover:bg-gray-100 rounded-full transition-all"
+          >
+            <X size={20} />
+          </button>
+        </div>
 
-);
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Title</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full p-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              required
+            />
           </div>
-        ) : (
-          <>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Create New Blog</h2>
-              <button 
-                onClick={onClose}
-                className="text-gray-500 hover:text-gray-700 p-1.5 hover:bg-gray-100 rounded-full transition-all"
-              >
-                <X size={20} />
-              </button>
-            </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Content</label>
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              rows={6}
+              className="w-full p-2.5 border border-gray-200 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              required
+            />
+          </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Title</label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full p-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Content</label>
-                <textarea
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  rows={6}
-                  className="w-full p-2.5 border border-gray-200 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                  required
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="flex items-center justify-center gap-2 w-full bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 transition-all duration-300 shadow-sm"
-              >
-                <Send className="w-4 h-4" />
-                <span>Post Blog</span>
-              </button>
-            </form>
-          </>
-        )}
+          <button
+            type="submit"
+            className="flex items-center justify-center gap-2 w-full bg-blue-600 text-white px-5 py-2.5 rounded-full hover:bg-blue-700 transition-all duration-300 shadow-sm"
+          >
+            <Send className="w-4 h-4" />
+            <span>Post Blog</span>
+          </button>
+        </form>
       </div>
     </div>
   );
@@ -207,7 +198,7 @@ const BlogForum = ({ user = { name: "Financial Expert" } }) => {
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
   
   const generateBlogs = async () => {
     setLoading(true);
@@ -234,23 +225,18 @@ const BlogForum = ({ user = { name: "Financial Expert" } }) => {
         }
       );
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       
       const data = await response.json();
             
       if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
-        let blogData;
         const text = data.candidates[0].content.parts[0].text;
         const jsonString = text.replace(/```json\n?|\n?```/g, '').trim();
                 
         try {
-          blogData = JSON.parse(jsonString);
+          const blogData = JSON.parse(jsonString);
                   
-          if (!Array.isArray(blogData)) {
-            throw new Error('Response is not an array');
-          }
+          if (!Array.isArray(blogData)) throw new Error('Response is not an array');
                   
           const newBlogs = blogData.map((blog, index) => ({
             id: Date.now() + index,
@@ -259,7 +245,6 @@ const BlogForum = ({ user = { name: "Financial Expert" } }) => {
             author: user.name,
             likes: Math.floor(Math.random() * 50),
             isLiked: false,
-            isBookmarked: false,
             category: [
               t.blog.categories.investment,
               t.blog.categories.banking,
@@ -305,11 +290,15 @@ const BlogForum = ({ user = { name: "Financial Expert" } }) => {
       return blog;
     }));
   };
+  
+  const handleCreateBlog = (newBlog) => {
+    setBlogs([newBlog, ...blogs]);
+  };
 
   return (
     <DashboardLayout>
       <div className="p-6 bg-gradient-to-b from-gray-50 to-gray-100 min-h-screen">
-        <div className="max-w-6xl mx-auto space-y-6">
+        <div className="max-w-4xl mx-auto space-y-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
               <div className="flex items-center gap-4">
@@ -325,8 +314,8 @@ const BlogForum = ({ user = { name: "Financial Expert" } }) => {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r 
-                    from-green-500 to-green-600 text-white rounded-lg 
+                  className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r 
+                    from-green-500 to-green-600 text-white rounded-full 
                     hover:from-green-600 hover:to-green-700 transition-all duration-300
                     transform hover:scale-105 active:scale-95 shadow-md"
                 >
@@ -336,8 +325,8 @@ const BlogForum = ({ user = { name: "Financial Expert" } }) => {
                 <button
                   onClick={generateBlogs}
                   disabled={loading}
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r 
-                    from-blue-500 to-blue-600 text-white rounded-lg
+                  className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r 
+                    from-blue-500 to-blue-600 text-white rounded-full
                     hover:from-blue-600 hover:to-blue-700 transition-all duration-300
                     transform hover:scale-105 active:scale-95 shadow-md disabled:opacity-60
                     disabled:cursor-not-allowed"
@@ -349,13 +338,13 @@ const BlogForum = ({ user = { name: "Financial Expert" } }) => {
             </div>
           </div>
 
-          <div className="grid gap-6">
+          <div className="space-y-5 animate-[fadeIn_0.5s_ease-out]">
             {loading ? (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <div className="space-y-5">
                 {[1, 2, 3].map(i => <LoadingCard key={i} />)}
               </div>
             ) : (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 animate-[fadeIn_0.5s_ease-out]">
+              <div className="space-y-5">
                 {blogs.map((blog) => (
                   <BlogCard
                     key={blog.id}
@@ -372,8 +361,8 @@ const BlogForum = ({ user = { name: "Financial Expert" } }) => {
       <CreateBlogModal 
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
+        onCreateBlog={handleCreateBlog}
       />
-
     </DashboardLayout>
   );
 };

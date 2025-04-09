@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { X, Send, SmilePlus, CheckCircle2 } from 'lucide-react'; // Add CheckCircle2 import
+import { X, Send, SmilePlus, CheckCircle2 } from 'lucide-react';
 import Sentiment from 'sentiment';
 import api from '@/services/api';
+import { useTranslation } from '@/context/TranslationContext';
 
 const FeedbackPopup = ({ onClose }) => {
+  const { t } = useTranslation();
   const [feedback, setFeedback] = useState('');
   const [rating, setRating] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -13,11 +15,11 @@ const FeedbackPopup = ({ onClose }) => {
   const sentiment = new Sentiment();
 
   const emojis = [
-    { value: 1, icon: '😢', label: 'Very Dissatisfied' },
-    { value: 2, icon: '😕', label: 'Dissatisfied' },
-    { value: 3, icon: '😐', label: 'Neutral' },
-    { value: 4, icon: '😊', label: 'Satisfied' },
-    { value: 5, icon: '😄', label: 'Very Satisfied' }
+    { value: 1, icon: '😢', label: t.feedbackPopup.ratings[1] },
+    { value: 2, icon: '😕', label: t.feedbackPopup.ratings[2] },
+    { value: 3, icon: '😐', label: t.feedbackPopup.ratings[3] },
+    { value: 4, icon: '😊', label: t.feedbackPopup.ratings[4] },
+    { value: 5, icon: '😄', label: t.feedbackPopup.ratings[5] }
   ];
 
   // Convert sentiment score to rating (1-5 scale)
@@ -145,8 +147,8 @@ const FeedbackPopup = ({ onClose }) => {
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
               <CheckCircle2 className="w-10 h-10 text-green-500 animate-[scale_0.5s_ease-in-out]" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900">Thank You!</h3>
-            <p className="text-gray-500">Your feedback has been submitted successfully.</p>
+            <h3 className="text-xl font-semibold text-gray-900">{t.feedbackPopup.thankYou}</h3>
+            <p className="text-gray-500">{t.feedbackPopup.feedbackSuccess}</p>
             <div className="animate-[fadeIn_1s_ease-in-out] text-4xl">
               {rating >= 4 ? '😄' : rating >= 3 ? '😊' : '🙂'}
             </div>
@@ -170,7 +172,7 @@ const FeedbackPopup = ({ onClose }) => {
               <div className="bg-white/20 p-2 rounded-lg">
                 <SmilePlus className="w-5 h-5 text-white" />
               </div>
-              <h2 className="text-lg font-semibold text-white">Share Your Feedback</h2>
+              <h2 className="text-lg font-semibold text-white">{t.feedbackPopup.title}</h2>
             </div>
             <button
               onClick={onClose}
@@ -185,7 +187,7 @@ const FeedbackPopup = ({ onClose }) => {
           {/* Feedback Text Area with Sentiment Analysis */}
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">
-              Tell us more about your experience
+              {t.feedbackPopup.textareaLabel}
             </label>
             <textarea
               value={feedback}
@@ -194,14 +196,14 @@ const FeedbackPopup = ({ onClose }) => {
                 focus:ring-2 focus:ring-blue-500 focus:border-transparent
                 placeholder:text-gray-400 transition-all h-[100px]
                 bg-${getSentimentColor()}`}
-              placeholder="What went well? What could be improved?"
+              placeholder={t.feedbackPopup.textareaPlaceholder}
             />
           </div>
 
           {/* Rating Section with improved alignment and grayscale effect */}
           <div className="space-y-4">
             <label className="block text-sm font-medium text-gray-700">
-              Sentiment Analysis
+              {t.feedbackPopup.sentimentLabel}
             </label>
             <div className="grid grid-cols-5 gap-2 px-2">
               {emojis.map((emoji) => (
@@ -257,7 +259,7 @@ const FeedbackPopup = ({ onClose }) => {
             `}
           >
             <Send className={`w-4 h-4 ${isSubmitting ? 'animate-pulse' : ''}`} />
-            {isSubmitting ? 'Submitting...' : 'Submit Feedback'}
+            {isSubmitting ? t.feedbackPopup.submitting : t.feedbackPopup.submitButton}
           </button>
         </form>
       </div>

@@ -166,19 +166,11 @@ const Header = ({
 
         {/* Right Section */}
         <div className="flex items-center gap-2 lg:gap-6">
-          {/* Language switcher - Hide on very small screens */}
-          <div className="hidden sm:block scale-110">
+          {/* Language switcher - Visible on all screen sizes */}
+          <div className="scale-110">
             <LanguageSwitcher />
           </div>
           
-          {/* Notification button */}
-          <button className="p-2 lg:p-2.5 hover:bg-white/10 rounded-lg relative
-            transition-colors">
-            <Bell className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
-            <span className="absolute top-2 right-2 w-2 h-2 lg:w-2.5 lg:h-2.5 
-              bg-red-400 rounded-full animate-pulse"></span>
-          </button>
-
           {/* Profile Section */}
           <div className="relative">
             <button 

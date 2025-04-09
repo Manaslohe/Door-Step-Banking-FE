@@ -9,68 +9,86 @@ import {
   MessageInput,
   TypingIndicator,
 } from '@chatscope/chat-ui-kit-react';
-import { X, Volume2, VolumeX, Send, MessageSquare, Mic, MicOff } from 'lucide-react'; // Add these imports
+import { X, Volume2, VolumeX, Send, MessageSquare, Mic, MicOff } from 'lucide-react';
 import { useTranslation } from '../context/TranslationContext';
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "your_default_api_key";
 
-const systemContext = `You are Saral Bot, a Doorstep Banking Assistant. Key Information:
+const systemContext = `You are Saral Bot, a friendly Doorstep Banking Assistant for Saral Banking ~ Banking at your Door Step.
+Founders: Manas Lohe, Roshtu Kuthiala, Shivam Rawat.
+Contact: 9420718136, 7982741823, 964311681.
 
-Website: Saral Banking ~ Banking at your Door Step
-Founders: Manas Lohe, Roshtu Kuthiala, Shivam Rawat
-Contact: 9420718136, 7982741823, 964311681
+Your role:
+- Be warm, clear, and easy to understand.
+- If the user speaks in Hindi or Hinglish, reply in Hindi only.
+- If the user asks about our website, first explain the services, then where to find them, and mention extra features like:
+  * AI-based financial advice
+  * Financial blog for tips and insights
+  * Transparent tracking of services
+  * Language slider in the header to switch languages as preferred.
 
-Service Navigation Guidelines:
-When explaining any service, follow this pattern:
-1. First explain what the service is
-2. Then explain step-by-step how to access it
-3. Mention any requirements or documents needed
-4. Explain how to track the service status
-5. Be concise but informative
+General guidance:
+- If asked "How to book a service?", reply: "You can explore and book any service by visiting the Home page and opening the Banking Services section. Then, select the service you need, follow the simple steps, and complete your booking. You can always track your service status in the 'Track Service' section."
+
+When asked about any service, follow this flow:
+1. Start by explaining what the service is.
+2. Clearly guide them on how to book it (use natural words: "Go to Home, select Services, then choose...").
+3. Mention any documents or details required.
+4. Explain how to track the status.
+5. Keep it short, clear, and warm.
+
+All services are available under the "Services" section on the Home page.
 
 Available Services:
 
 1. Cash Deposit
-- Purpose: Deposit cash directly from your doorstep
-- Steps: Home → Services → Cash Deposit → Fill details → OTP verification
-- Requirements: Valid ID, Account details
-- Tracking: Use Track Service section
+- Purpose: Deposit cash directly from your doorstep.
+- Booking: Go to Home, select  Banking Services, then choose Cash Deposit. Fill in your details and verify with OTP.
+- Requirements: Valid ID and your account details.
+- Tracking: Use the "Track Service" section.
 
 2. Cash Withdrawal
-- Purpose: Get cash delivered to your doorstep
-- Steps: Home → Services → Cash Withdrawal → Amount & details → OTP verify
-- Requirements: Account details, Valid ID
-- Tracking: Track Service section
+- Purpose: Receive cash at your doorstep.
+- Booking: From Home, open Banking Services, select Cash Withdrawal, enter the amount and details, and complete OTP verification.
+- Requirements: Valid ID and account details.
+- Tracking: "Track Service" section.
 
 3. Open New Account
-- Purpose: Start new bank account with doorstep verification
-- Steps: Home → Services → Open Account → Fill form → Submit → Schedule verification
-- Documents: ID proof, Address proof, Photos
-- Tracking: Track Service section
+- Purpose: Start a new bank account with doorstep verification.
+- Booking: Go to Home, select Banking Services, and then Open Account. Fill out the form, submit, and schedule verification.
+- Documents: ID proof, address proof, and photos.
+- Tracking: Check "Track Service."
 
 4. Document Collection/Delivery
-- Purpose: Submit or receive bank documents from home
-- Steps: Home → Services → Document Services → Select type → Schedule
-- Tracking: Track Service section
+- Purpose: Submit or receive your bank documents from home.
+- Booking: From Home, go to Banking Services, choose Document Services, select the type, and schedule.
+- Tracking: "Track Service" section.
 
 5. Life Certificate Collection
-- Purpose: Pension life certificate verification at home
-- Steps: Home → Services → Life Certificate → Details → Schedule visit
-- Requirements: Pension details, Valid ID
-- Tracking: Track Service section
+- Purpose: Pensioners can complete life certificate verification at home.
+- Booking: Start at Home, choose Banking Services, then Life Certificate. Enter your details and schedule a visit.
+- Requirements: Pension details and valid ID.
+- Tracking: Use the "Track Service" section.
 
 6. Online Assistance
-- Purpose: Virtual banking support
-- Steps: Home → Services → Online Assistance → Schedule meeting
-- Available 24/7
+- Purpose: Get virtual banking support anytime.
+- Booking: From Home, select Banking Services, then Online Assistance. Schedule your meeting.
+- Availability: 24/7.
+
+Extra Features to mention (if user asks about website):
+- Access a smart AI-based financial advisor for personalized guidance.
+- Explore our financial blog for useful money management tips.
+- Track your services transparently using the "Track Service" section.
+- Change your preferred language anytime using the language slider at the top of the page.
 
 For any issues:
-1. Use Support section from Home page
-2. Fill support form
-3. Track ticket in "Track Tickets" section
-4. Contact: 9420718136, 7982741823, 964311681
+- Go to the Support section from the Home page.
+- Fill out the support form.
+- Track your ticket in "Track Tickets."
+- Or call: 9420718136, 7982741823, 964311681.
 
-Remember to be conversational and helpful. When someone asks about a service, explain its purpose and process clearly.`;
+Always respond in a helpful, friendly tone. Be clear, concise, and make sure the user feels assisted at every step.`
+
 
 const Chatbot = ({ onClose }) => {
   const [messages, setMessages] = useState([
@@ -81,153 +99,64 @@ const Chatbot = ({ onClose }) => {
     }
   ]);
   const [isTyping, setIsTyping] = useState(false);
-  const [isTextToSpeech, setIsTextToSpeech] = useState(true); // Changed to true by default
+  const [isTextToSpeech, setIsTextToSpeech] = useState(true);
   const [inputValue, setInputValue] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [recognition, setRecognition] = useState(null);
   const speechSynthesis = window.speechSynthesis;
-  const { language, t } = useTranslation();
+  const { currentLanguage, t } = useTranslation();
 
-  // Add useEffect for initial greeting
+  const language = currentLanguage === 'hi' ? 'hindi' : 'english';
+
   useEffect(() => {
-    // Initialize with greeting in selected language
+    const greeting = t.chatbotGreeting;
     setMessages([{
-      message: t.chatbotGreeting,
+      message: greeting,
       sentTime: "just now",
       sender: "ChatGPT"
     }]);
-    
-    speakMessage(t.chatbotGreeting);
 
-    // Cleanup function to stop speech when component unmounts
+    setTimeout(() => {
+      speakMessage(greeting);
+    }, 100);
+
     return () => {
       if (speechSynthesis) {
         speechSynthesis.cancel();
       }
     };
-  }, [language]); // Re-run when language changes
+  }, [currentLanguage, t]);
 
-  // Add new debug function
-  const logAvailableVoices = () => {
-    const voices = speechSynthesis.getVoices();
-    console.log('Available voices:', voices.map(voice => ({
-      name: voice.name,
-      lang: voice.lang,
-      default: voice.default,
-      localService: voice.localService,
-      voiceURI: voice.voiceURI
-    })));
-  };
-
-  // Add this effect to load voices when component mounts
   useEffect(() => {
-    // Load voices on component mount
-    const loadVoices = () => {
-      speechSynthesis.getVoices();
-      logAvailableVoices(); // Log voices when loaded
-    };
-    
-    loadVoices();
-    speechSynthesis.onvoiceschanged = loadVoices;
-    
-    return () => {
-      speechSynthesis.onvoiceschanged = null;
-    };
-  }, []);
-
-  // Add useEffect for speech recognition setup
-  useEffect(() => {
-    if ('webkitSpeechRecognition' in window) {
-      const recognition = new webkitSpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = false;
+    if (recognition) {
       recognition.lang = language === 'hindi' ? 'hi-IN' : 'en-US';
+    }
 
-      recognition.onresult = (event) => {
+    if ('webkitSpeechRecognition' in window) {
+      const newRecognition = new webkitSpeechRecognition();
+      newRecognition.continuous = false;
+      newRecognition.interimResults = false;
+      newRecognition.lang = language === 'hindi' ? 'hi-IN' : 'en-US';
+
+      newRecognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
         setInputValue(transcript);
         handleSend(transcript);
       };
 
-      recognition.onerror = (event) => {
+      newRecognition.onerror = (event) => {
         console.error('Speech recognition error:', event.error);
         setIsListening(false);
       };
 
-      recognition.onend = () => {
+      newRecognition.onend = () => {
         setIsListening(false);
       };
 
-      setRecognition(recognition);
+      setRecognition(newRecognition);
     }
-  }, [language]);
+  }, [currentLanguage]);
 
-  const speakMessage = (text) => {
-    if (isTextToSpeech && text) {
-      speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      
-      // Get available voices
-      const voices = speechSynthesis.getVoices();
-      
-      // Define preferred voice names for each language
-      const preferredVoices = {
-        hindi: ['Microsoft Swara Online (Natural) - Hindi (India)', 'Microsoft Heera', 'hi-IN-Female'],
-        english: ['Microsoft David', 'Microsoft Mark', 'en-US-Male']
-      };
-      
-      let selectedVoice = null;
-      
-      if (language === 'hindi') {
-        // Try to find preferred Hindi female voice
-        for (const voiceName of preferredVoices.hindi) {
-          const voice = voices.find(v => 
-            v.name.includes(voiceName) || 
-            (v.lang.includes('hi-IN') && v.name.toLowerCase().includes('female'))
-          );
-          if (voice) {
-            selectedVoice = voice;
-            break;
-          }
-        }
-      } else {
-        // Try to find preferred English female voice
-        for (const voiceName of preferredVoices.english) {
-          const voice = voices.find(v => 
-            v.name.includes(voiceName) || 
-            (v.lang.includes('en') && v.name.toLowerCase().includes('female'))
-          );
-          if (voice) {
-            selectedVoice = voice;
-            break;
-          }
-        }
-      }
-      
-      // If still no voice selected, try any female voice in the correct language
-      if (!selectedVoice) {
-        selectedVoice = voices.find(voice => 
-          voice.lang.includes(language === 'hindi' ? 'hi-IN' : 'en') &&
-          voice.name.toLowerCase().includes('female')
-        );
-      }
-      
-      // Log selected voice for debugging
-      console.log('Selected voice:', selectedVoice?.name, selectedVoice?.lang);
-      
-      if (selectedVoice) {
-        utterance.voice = selectedVoice;
-      }
-      
-      utterance.lang = language === 'hindi' ? 'hi-IN' : 'en-US';
-      utterance.rate = 0.9; // Slightly slower rate for better clarity
-      utterance.pitch = 1.1; // Slightly higher pitch for female voice
-      
-      speechSynthesis.speak(utterance);
-    }
-  };
-
-  // Add function to toggle speech recognition
   const toggleListening = () => {
     if (!recognition) return;
 
@@ -239,16 +168,203 @@ const Chatbot = ({ onClose }) => {
     }
   };
 
-  // Add Hinglish to Hindi conversion helper
+  const toggleTextToSpeech = () => {
+    if (isTextToSpeech) {
+      speechSynthesis.cancel();
+    }
+
+    setIsTextToSpeech(!isTextToSpeech);
+
+    if (!isTextToSpeech && messages.length > 0) {
+      setTimeout(() => {
+        const lastMessage = messages[messages.length - 1];
+        if (lastMessage.sender === 'ChatGPT') {
+          speakMessage(lastMessage.message);
+        }
+      }, 100);
+    }
+  };
+
+  const formatTextForSpeech = (text) => {
+    if (!text) return '';
+
+    // Format phone numbers with spaces for clear pronunciation
+    const phoneNumberPattern = /\b(\d{10})\b/g;
+    let formattedText = text.replace(phoneNumberPattern, (match) => {
+      return match.split('').join(' ');
+    });
+
+    // Special handling for Hindi to add natural pauses
+    if (language === 'hindi') {
+      formattedText = formattedText
+        // Remove double spaces that might cause pauses
+        .replace(/\s\s+/g, ' ')
+        // Replace periods with a comma + space for natural pause
+        .replace(/\./g, ', ')
+        // Add space after comma for slight pause
+        .replace(/\,/g, ', ')
+        // Handle Devanagari danda
+        .replace(/\।/g, ', ')
+        // Remove other punctuation that causes excessive pauses
+        .replace(/\-/g, ' ')
+        .replace(/\:/g, ', ')
+        .replace(/\!/g, ', ')
+        .replace(/\?/g, ', ')
+        .replace(/\(/g, ' ')
+        .replace(/\)/g, ' ')
+        .trim();
+    }
+    
+    return formattedText;
+  };
+
+  const speakMessage = (text) => {
+    if (!isTextToSpeech || !text) return;
+
+    // Format text for better speech
+    const formattedText = formatTextForSpeech(text);
+    console.log(`Speaking in ${language}: "${formattedText}"`);
+    
+    // Cancel any ongoing speech
+    speechSynthesis.cancel();
+    
+    // Use different approaches for Hindi vs English
+    if (language === 'hindi') {
+      // For Hindi, speak the whole text at once with optimized parameters
+      const utterance = new SpeechSynthesisUtterance(formattedText);
+      
+      // Optimize Hindi speech parameters for natural pauses
+      utterance.lang = 'hi-IN';
+      utterance.rate = 0.95;     // Slightly faster but still natural
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+      
+      // Select Hindi voice
+      const voices = speechSynthesis.getVoices();
+      let hindiVoice = voices.find(voice => 
+        voice.lang === 'hi-IN' || 
+        voice.lang === 'hi_IN'
+      );
+      
+      // Fallback to any voice with Hindi in the name or language
+      if (!hindiVoice) {
+        hindiVoice = voices.find(voice => 
+          voice.lang.includes('hi') || 
+          voice.name.toLowerCase().includes('hindi')
+        );
+      }
+      
+      if (hindiVoice) {
+        utterance.voice = hindiVoice;
+        console.log(`Using Hindi voice: ${hindiVoice.name}`);
+      }
+      
+      // Handle error and completion
+      utterance.onerror = (e) => {
+        console.error('Hindi speech error:', e);
+      };
+      
+      utterance.onend = () => {
+        console.log('Hindi speech completed successfully');
+      };
+      
+      // Speak the text
+      speechSynthesis.speak(utterance);
+    } else {
+      // For English, continue using the existing chunking approach
+      const maxLength = 100;
+      const textChunks = [];
+      
+      if (formattedText.length > maxLength) {
+        // Split at sentence boundaries when possible
+        const sentences = formattedText.match(/[^.!?]+[.!?]+/g) || [formattedText];
+        
+        let currentChunk = '';
+        for (const sentence of sentences) {
+          if (currentChunk.length + sentence.length <= maxLength) {
+            currentChunk += sentence;
+          } else {
+            if (currentChunk) textChunks.push(currentChunk);
+            currentChunk = sentence;
+          }
+        }
+        
+        if (currentChunk) textChunks.push(currentChunk);
+      } else {
+        textChunks.push(formattedText);
+      }
+      
+      console.log(`Split into ${textChunks.length} chunks for English speech`);
+      
+      // Handle speaking each chunk in sequence
+      let currentChunkIndex = 0;
+      let isSpeaking = true;
+      
+      const speakNextChunk = () => {
+        if (currentChunkIndex >= textChunks.length || !isTextToSpeech || !isSpeaking) {
+          return;
+        }
+        
+        const chunk = textChunks[currentChunkIndex];
+        const chunkUtterance = new SpeechSynthesisUtterance(chunk);
+        
+        chunkUtterance.lang = 'en-US';
+        chunkUtterance.rate = 0.9;
+        chunkUtterance.pitch = 1.0;
+        chunkUtterance.volume = 1.0;
+        
+        const voices = speechSynthesis.getVoices();
+        const englishVoice = voices.find(voice => 
+          voice.lang.includes('en-US') || 
+          voice.lang.includes('en_US')
+        );
+        
+        if (englishVoice) {
+          chunkUtterance.voice = englishVoice;
+          console.log(`Using English voice: ${englishVoice.name}`);
+        }
+        
+        chunkUtterance.onend = () => {
+          console.log(`Chunk ${currentChunkIndex + 1}/${textChunks.length} completed`);
+          currentChunkIndex++;
+          
+          setTimeout(() => {
+            speakNextChunk();
+          }, 150);
+        };
+        
+        chunkUtterance.onerror = (e) => {
+          console.error(`Error speaking chunk ${currentChunkIndex + 1}:`, e);
+          currentChunkIndex++;
+          speakNextChunk();
+        };
+        
+        try {
+          speechSynthesis.speak(chunkUtterance);
+        } catch (err) {
+          console.error('Failed to speak:', err);
+          currentChunkIndex++;
+          speakNextChunk();
+        }
+      };
+      
+      // Start speaking the chunks for English
+      speakNextChunk();
+    }
+    
+    // Return a function that can be used to stop speaking
+    return () => {
+      speechSynthesis.cancel();
+    };
+  };
+
   const convertHinglishToHindi = async (text) => {
     try {
-      // First, check if the text might be Hinglish
-      const hasHinglishPattern = /[a-zA-Z]/i.test(text) && 
+      const hasHinglishPattern = /[a-zA-Z]/i.test(text) &&
         /(?:hai|kya|main|hum|tum|aap|kaise|karenge|chahiye)/i.test(text);
-  
+
       if (!hasHinglishPattern) return text;
-  
-      // Use Gemini to convert Hinglish to Hindi
+
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
         {
@@ -263,9 +379,9 @@ const Chatbot = ({ onClose }) => {
           })
         }
       );
-  
+
       if (!response.ok) return text;
-      
+
       const data = await response.json();
       return data.candidates[0]?.content?.parts[0]?.text || text;
     } catch (error) {
@@ -273,43 +389,43 @@ const Chatbot = ({ onClose }) => {
       return text;
     }
   };
-  
+
   const handleSend = async (message) => {
     if (!message.trim()) return;
-    
+
     let processedMessage = message;
     if (language === 'hindi') {
       processedMessage = await convertHinglishToHindi(message);
     }
-  
+
     const newMessage = {
       message: processedMessage,
       direction: 'outgoing',
       sender: "user"
     };
-  
+
     const newMessages = [...messages, newMessage];
     setMessages(newMessages);
     setInputValue('');
     setIsTyping(true);
     await processMessageToChatGPT(newMessages);
   };
-  
+
   async function processMessageToChatGPT(chatMessages) {
     const lastMessage = chatMessages[chatMessages.length - 1];
-  
+
     const prompt = {
       contents: [{
         parts: [{
           text: `${systemContext}
-  
+
   Current language: ${language}
   Respond in ${language === 'hindi' ? 'Hindi' : 'English'} language.
   Keep responses under 50 words.
   Be helpful and friendly.
-  
+
   User question: ${lastMessage.message}
-  
+
   Remember to:
   1. Be concise and clear
   2. Focus on the specific service or question asked
@@ -319,12 +435,12 @@ const Chatbot = ({ onClose }) => {
         }]
       }]
     };
-  
+
     try {
       if (!API_KEY) {
         throw new Error('API key not configured');
       }
-  
+
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`,
         {
@@ -335,23 +451,26 @@ const Chatbot = ({ onClose }) => {
           body: JSON.stringify(prompt)
         }
       );
-  
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-  
+
       const data = await response.json();
-      console.log('API Response:', data); // Debug log
-  
-      // Updated response handling
+      console.log('API Response:', data);
+
       if (data && data.candidates && data.candidates[0] && data.candidates[0].content) {
         const responseText = data.candidates[0].content.parts[0]?.text?.trim();
         if (responseText) {
-          setMessages([...chatMessages, {
+          const newResponse = {
             message: responseText,
             sender: "ChatGPT"
-          }]);
-          speakMessage(responseText);
+          };
+          setMessages([...chatMessages, newResponse]);
+
+          setTimeout(() => {
+            speakMessage(responseText);
+          }, 100);
         } else {
           throw new Error('Empty response from API');
         }
@@ -360,10 +479,10 @@ const Chatbot = ({ onClose }) => {
       }
     } catch (error) {
       console.error("Chatbot error:", error);
-      const errorMessage = language === 'hindi' 
+      const errorMessage = language === 'hindi'
         ? 'माफ़ कीजिये, मैं अभी आपकी सहायता नहीं कर सकता। कृपया कुछ देर बाद प्रयास करें।'
         : "I'm sorry, I can't help right now. Please try again later.";
-      
+
       setMessages([...chatMessages, {
         message: errorMessage,
         sender: "ChatGPT"
@@ -372,13 +491,14 @@ const Chatbot = ({ onClose }) => {
       setIsTyping(false);
     }
   }
-  
+
   const handleClose = () => {
     if (speechSynthesis) {
       speechSynthesis.cancel();
     }
     onClose?.();
   };
+
   return (
     <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-lg overflow-hidden h-[600px] 
       flex flex-col border border-blue-100">
@@ -390,8 +510,9 @@ const Chatbot = ({ onClose }) => {
         </h3>
         <div className="flex items-center gap-2">
           <button 
-            onClick={() => setIsTextToSpeech(!isTextToSpeech)}
+            onClick={toggleTextToSpeech}
             className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            aria-label={isTextToSpeech ? "Turn off voice" : "Turn on voice"}
           >
             {isTextToSpeech ? (
               <Volume2 className="w-5 h-5" />

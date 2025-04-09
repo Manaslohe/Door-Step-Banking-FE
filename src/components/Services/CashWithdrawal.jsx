@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DollarSign, Clock, Calendar, MapPin, Building2, CreditCard } from 'lucide-react';
 import DashboardLayout from '../Dashboard/DashboardLayout';
@@ -11,6 +11,7 @@ import { motion } from 'framer-motion';
 import VoiceAssistant from '../Common/VoiceAssistant';
 import { speak, parseDate, findBestMatch, parseTimeSlot } from '../../utils/voiceUtils';
 import { useServiceTranslation } from '../../context/ServiceTranslationContext';
+import Toast from '../Admin/Toast';
 
 const CashWithdrawal = () => {
   const navigate = useNavigate();
@@ -37,23 +38,110 @@ const CashWithdrawal = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [activeField, setActiveField] = useState(null);
   const t = useServiceTranslation();
+  // Add toast state
+  const [toast, setToast] = useState({ show: false, message: '', type: '' });
+  const [availableTimeSlots, setAvailableTimeSlots] = useState(standardTimeSlots);
+
+  // Generate minimum date string (today)
+  const getTodayString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // Update available time slots based on selected date
+  useEffect(() => {
+    if (formData.date === getTodayString()) {
+      const currentHour = new Date().getHours();
+      const currentMinutes = new Date().getMinutes();
+      
+      const filteredSlots = standardTimeSlots.filter(slot => {
+        const [time, period] = slot.split(' ');
+        let [hours, minutes] = time.split(':').map(num => parseInt(num, 10));
+        
+        if (period === 'PM' && hours !== 12) {
+          hours += 12;
+        } else if (period === 'AM' && hours === 12) {
+          hours = 0;
+        }
+        
+        // Add buffer of 1 hour
+        return hours > currentHour + 1 || (hours === currentHour + 1 && minutes >= currentMinutes);
+      });
+      
+      setAvailableTimeSlots(filteredSlots);
+      
+      // Clear selected time slot if it's no longer available
+      if (formData.timeSlot && !filteredSlots.includes(formData.timeSlot)) {
+        setFormData(prev => ({ ...prev, timeSlot: '' }));
+        if (formData.timeSlot) {
+          showToast('Selected time slot is no longer available today. Please choose a different time.', 'warning');
+        }
+      }
+    } else {
+      setAvailableTimeSlots(standardTimeSlots);
+    }
+  }, [formData.date]);
+
+  const showToast = (message, type = 'error') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: '' }), 5000);
+  };
 
   const handleInputChange = (e) => {
-    if (e.target.name === 'bankAccount') {
-      const selectedAccount = bankAccounts.find(acc => acc.id === e.target.value);
+    const { name, value } = e.target;
+    
+    if (name === 'bankAccount') {
+      const selectedAccount = bankAccounts.find(acc => acc.id === value);
       setFormData({ 
         ...formData, 
-        bankAccount: e.target.value,
+        bankAccount: value,
         ifscCode: selectedAccount ? selectedAccount.ifsc : '',
         bank: selectedAccount ? selectedAccount.fullName : ''
       });
+    } else if (name === 'amount') {
+      const numValue = parseInt(value, 10);
+      if (numValue > 25000) {
+        showToast('Amount cannot exceed ₹25,000', 'warning');
+        return;
+      }
+      setFormData({ ...formData, [name]: value });
+    } else if (name === 'date') {
+      const selectedDate = new Date(value);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (selectedDate < today) {
+        showToast('Cannot select a past date', 'error');
+        return;
+      }
+      
+      setFormData({ ...formData, [name]: value });
+    } else if (name === 'timeSlot') {
+      // Time slot validation is handled by the filtered options in the select
+      setFormData({ ...formData, [name]: value });
     } else {
-      setFormData({ ...formData, [e.target.name]: e.target.value });
+      setFormData({ ...formData, [name]: value });
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Final validation before submission
+    const amount = parseInt(formData.amount, 10);
+    if (amount > 25000) {
+      showToast('Amount cannot exceed ₹25,000', 'error');
+      return;
+    }
+    
+    if (!formData.date || !formData.timeSlot) {
+      showToast('Please select a valid date and time', 'error');
+      return;
+    }
+    
     setShowOtpPopup(true);
   };
 
@@ -105,12 +193,10 @@ const CashWithdrawal = () => {
     return progress;
   };
 
-  // Add voice input handling
   const handleVoiceInput = async (voiceData) => {
     const field = Object.keys(voiceData)[0];
     let value = voiceData[field].toLowerCase();
 
-    // Check for form submission commands
     if (['confirm', 'send', 'submit'].includes(value)) {
       if (calculateProgress().bankDetails && 
           calculateProgress().delivery && 
@@ -225,7 +311,6 @@ const CashWithdrawal = () => {
             animate={{ opacity: 1, y: 0 }}
             className="bg-white rounded-xl shadow-lg border"
           >
-            {/* Voice Assistant Header */}
             <div className="flex items-center justify-between gap-4 p-4 border-b">
               <h2 className="text-lg font-semibold">{t.cashWithdrawal}</h2>
               <VoiceAssistant 
@@ -237,7 +322,6 @@ const CashWithdrawal = () => {
               />
             </div>
 
-            {/* Progress Steps */}
             <div className="grid grid-cols-3 border-b">
               {[
                 { key: 'bankDetails', label: t.bankDetails, icon: Building2 },
@@ -279,14 +363,12 @@ const CashWithdrawal = () => {
               ))}
             </div>
 
-            {/* Form Content */}
             <motion.form 
               onSubmit={handleSubmit}
               className="p-4 sm:p-6 md:p-8"
               layout
             >
               <div className="grid md:grid-cols-2 gap-4 sm:gap-6 md:gap-6">
-                {/* Bank Details Section */}
                 <div className="space-y-4 sm:space-y-6">
                   <div>
                     <label className="block text-sm sm:text-base md:text-lg font-medium text-gray-700 mb-1.5 sm:mb-2">
@@ -323,7 +405,6 @@ const CashWithdrawal = () => {
                   </div>
                 </div>
 
-                {/* Delivery Details Section */}
                 <div className="space-y-4 sm:space-y-6">
                   <div>
                     <label className="block text-sm sm:text-base md:text-lg font-medium text-gray-700 mb-1.5 sm:mb-2">
@@ -355,6 +436,7 @@ const CashWithdrawal = () => {
                           type="date"
                           name="date"
                           value={formData.date}
+                          min={getTodayString()}
                           className="w-full pl-10 p-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
                           onChange={handleInputChange}
                           onFocus={() => handleFieldFocus('date')}
@@ -377,7 +459,7 @@ const CashWithdrawal = () => {
                           required
                         >
                           <option value="">{t.selectTime}</option>
-                          {standardTimeSlots.map(slot => (
+                          {availableTimeSlots.map(slot => (
                             <option key={slot} value={slot}>{slot}</option>
                           ))}
                         </select>
@@ -386,10 +468,9 @@ const CashWithdrawal = () => {
                   </div>
                 </div>
 
-                {/* Amount Section */}
                 <div className="md:col-span-2">
                   <label className="block text-sm sm:text-base md:text-lg font-medium text-gray-700 ">
-                    {t.withdrawalAmount}
+                    {t.withdrawalAmount} <span className="text-gray-500 text-sm">(Max ₹25,000)</span>
                   </label>
                   <div className="relative">
                     <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -400,13 +481,13 @@ const CashWithdrawal = () => {
                       placeholder={t.enterAmount}
                       className="w-full pl-10 p-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
                       onChange={handleInputChange}
+                      max="25000"
                       onFocus={() => handleFieldFocus('amount')}
                       required
                     />
                   </div>
                 </div>
 
-                {/* Submit Button */}
                 <motion.button
                   type="submit"
                   whileHover={{ scale: 1.01 }}
@@ -421,7 +502,6 @@ const CashWithdrawal = () => {
           </motion.div>
         </div>
 
-        {/* Popups */}
         {showOtpPopup && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -446,6 +526,14 @@ const CashWithdrawal = () => {
               message={t.withdrawalSuccess}
             />
           </motion.div>
+        )}
+
+        {toast.show && (
+          <Toast 
+            message={toast.message} 
+            type={toast.type} 
+            onClose={() => setToast({ ...toast, show: false })} 
+          />
         )}
       </motion.div>
     </DashboardLayout>

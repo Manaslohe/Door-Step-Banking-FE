@@ -11,6 +11,7 @@ import { banksList, standardTimeSlots } from '../../data/bankData';
 import { speak, parseDate, findBestMatch, parseTimeSlot } from '../../utils/voiceUtils';
 import VoiceAssistant from '../Common/VoiceAssistant';
 import { useServiceTranslation } from '../../context/ServiceTranslationContext';
+import Toast from '../Admin/Toast';
 
 const NewAccount = () => {
   const navigate = useNavigate();
@@ -31,6 +32,7 @@ const NewAccount = () => {
   const { createServiceRequest } = useServiceRequest();
   const [activeField, setActiveField] = useState(null);
   const t = useServiceTranslation();
+  const [toast, setToast] = useState({ show: false, message: '', type: '' });
 
   useEffect(() => {
     if (user) {
@@ -48,6 +50,7 @@ const NewAccount = () => {
     }
   }, [user]);
 
+  // Original time slots
   const timeSlots = [
     "09:00 AM - 11:00 AM",
     "11:00 AM - 01:00 PM",
@@ -55,12 +58,90 @@ const NewAccount = () => {
     "04:00 PM - 06:00 PM"
   ];
 
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const minDate = tomorrow.toISOString().split('T')[0];
+  // Get current date in YYYY-MM-DD format
+  const today = new Date();
+  const formattedToday = today.toISOString().split('T')[0];
+
+  // Get current time
+  const currentHour = today.getHours();
+  const currentMinute = today.getMinutes();
+
+  // Filter available time slots based on the selected date
+  const getAvailableTimeSlots = () => {
+    if (formData.visitDate === formattedToday) {
+      return timeSlots.filter(slot => {
+        const [startTime] = slot.split(' - ');
+        const [hourStr, minuteStr] = startTime.split(':');
+        let hour = parseInt(hourStr, 10);
+        const minute = parseInt(minuteStr, 10);
+        
+        // Convert to 24-hour format if PM
+        if (startTime.includes('PM') && hour !== 12) {
+          hour += 12;
+        }
+        // Handle 12 AM edge case
+        if (startTime.includes('AM') && hour === 12) {
+          hour = 0;
+        }
+
+        // Check if this time slot is in the future (with a 30-minute buffer)
+        if (hour < currentHour) {
+          return false;
+        }
+        if (hour === currentHour && minute <= currentMinute + 30) {
+          return false;
+        }
+        return true;
+      });
+    }
+    return timeSlots;
+  };
+
+  const availableTimeSlots = getAvailableTimeSlots();
+
+  // Validate and adjust time slot if needed when date changes
+  useEffect(() => {
+    if (formData.visitDate === formattedToday && formData.timeSlot) {
+      const isTimeSlotAvailable = availableTimeSlots.includes(formData.timeSlot);
+      if (!isTimeSlotAvailable) {
+        setFormData(prev => ({ ...prev, timeSlot: '' }));
+        showToast('Selected time slot is no longer available for today', 'warning');
+      }
+    }
+  }, [formData.visitDate]);
+
+  const showToast = (message, type = 'error') => {
+    setToast({ show: true, message, type });
+    // Auto-hide toast after 5 seconds
+    setTimeout(() => {
+      setToast({ show: false, message: '', type: '' });
+    }, 5000);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Validate form data
+    if (!formData.bankId) {
+      showToast('Please select a bank', 'error');
+      return;
+    }
+    
+    if (!formData.accountType) {
+      showToast('Please select an account type', 'error');
+      return;
+    }
+    
+    if (!formData.visitDate) {
+      showToast('Please select a visit date', 'error');
+      return;
+    }
+    
+    if (!formData.timeSlot) {
+      showToast('Please select a time slot', 'error');
+      return;
+    }
+    
     setShowOtpPopup(true);
   };
 
@@ -101,7 +182,7 @@ const NewAccount = () => {
       setShowSuccess(true);
     } catch (error) {
       console.error('Error creating service request:', error);
-      alert(error.message || 'Failed to create service request');
+      showToast(error.message || 'Failed to create service request', 'error');
     }
   };
 
@@ -232,6 +313,19 @@ const NewAccount = () => {
 
   const handleFieldFocus = (fieldName) => {
     setActiveField(fieldName);
+  };
+
+  const handleDateChange = (e) => {
+    const selectedDate = e.target.value;
+    setFormData({...formData, visitDate: selectedDate});
+    
+    // When switching dates, check if we need to reset the time slot
+    if (selectedDate === formattedToday && formData.timeSlot) {
+      if (!availableTimeSlots.includes(formData.timeSlot)) {
+        setFormData(prev => ({...prev, timeSlot: ''}));
+        showToast('Your previously selected time is no longer available for today', 'warning');
+      }
+    }
   };
 
   return (
@@ -411,9 +505,9 @@ const NewAccount = () => {
                         <input
                           type="date"
                           name="visitDate"
-                          min={minDate}
+                          min={formattedToday}
                           value={formData.visitDate}
-                          onChange={(e) => setFormData({...formData, visitDate: e.target.value})}
+                          onChange={handleDateChange}
                           className="w-full pl-10 p-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
                           required
                           onFocus={() => handleFieldFocus('visitDate')}
@@ -431,12 +525,19 @@ const NewAccount = () => {
                           className="w-full pl-10 p-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
                           required
                           onFocus={() => handleFieldFocus('timeSlot')}
+                          disabled={!formData.visitDate}
                         >
                           <option value="">{t.selectTime}</option>
-                          {timeSlots.map(slot => (
+                          {availableTimeSlots.map(slot => (
                             <option key={slot} value={slot}>{slot}</option>
                           ))}
+                          {formData.visitDate === formattedToday && availableTimeSlots.length === 0 && (
+                            <option value="" disabled>No available time slots for today</option>
+                          )}
                         </select>
+                        {formData.visitDate === formattedToday && availableTimeSlots.length === 0 && (
+                          <p className="text-red-500 text-xs mt-1">No available slots for today. Please select another date.</p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -486,6 +587,15 @@ const NewAccount = () => {
         {showSuccess && (
           <SuccessPage 
             message={t.accountSuccess}
+          />
+        )}
+
+        {/* Toast Notification */}
+        {toast.show && (
+          <Toast 
+            message={toast.message} 
+            type={toast.type} 
+            onClose={() => setToast({ show: false, message: '', type: '' })} 
           />
         )}
       </motion.div>

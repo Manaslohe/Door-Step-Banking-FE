@@ -25,6 +25,7 @@ export const translations = {
     riskLevel: 'Risk Level',
     sector: 'Sector',
     timeframe: 'Timeframe',
+    interestRate: 'Interest Rate',
     noAdviceAvailable: 'No investment advice available',
     
     // Navigation translations
@@ -187,6 +188,10 @@ export const translations = {
       createButton: "Create Blog",
       generating: "Generating..."
     },
+
+    // Read more/less translations
+    readMore: "Read more",
+    readLess: "Read less",
 
     // Service Tracking translations
     serviceTracking: {
@@ -463,6 +468,26 @@ export const translations = {
         title: 'No tickets found',
         subtitle: 'Try adjusting your search or filters'
       }
+    },
+
+    // Feedback Popup translations
+    feedbackPopup: {
+      title: 'Share Your Feedback',
+      close: 'Close',
+      textareaLabel: 'Tell us more about your experience',
+      textareaPlaceholder: 'What went well? What could be improved?',
+      sentimentLabel: 'Sentiment Analysis',
+      submitButton: 'Submit Feedback',
+      submitting: 'Submitting...',
+      thankYou: 'Thank You!',
+      feedbackSuccess: 'Your feedback has been submitted successfully.',
+      ratings: {
+        1: 'Very Dissatisfied',
+        2: 'Dissatisfied',
+        3: 'Neutral',
+        4: 'Satisfied',
+        5: 'Very Satisfied'
+      }
     }
   },
   hindi: {
@@ -488,6 +513,7 @@ export const translations = {
     riskLevel: 'जोखिम स्तर',
     sector: 'क्षेत्र',
     timeframe: 'समय सीमा',
+    interestRate: 'ब्याज दर',
     noAdviceAvailable: 'कोई निवेश सलाह उपलब्ध नहीं है',
     
     // Navigation translations
@@ -648,6 +674,10 @@ export const translations = {
       createButton: "ब्लॉग बनाएं",
       generating: "जनरेट हो रहा है..."
     },
+
+    // Read more/less translations
+    readMore: "अधिक पढ़ें",
+    readLess: "कम पढ़ें",
 
     // Service Tracking translations
     serviceTracking: {
@@ -923,6 +953,26 @@ export const translations = {
       noTickets: {
         title: 'कोई टिकट नहीं मिला',
         subtitle: 'अपनी खोज या फ़िल्टर समायोजित करें'
+      }
+    },
+
+    // Feedback Popup translations
+    feedbackPopup: {
+      title: 'अपनी प्रतिक्रिया साझा करें',
+      close: 'बंद करें',
+      textareaLabel: 'अपने अनुभव के बारे में हमें अधिक बताएं',
+      textareaPlaceholder: 'क्या अच्छा रहा? क्या बेहतर हो सकता है?',
+      sentimentLabel: 'भावना विश्लेषण',
+      submitButton: 'प्रतिक्रिया जमा करें',
+      submitting: 'जमा किया जा रहा है...',
+      thankYou: 'धन्यवाद!',
+      feedbackSuccess: 'आपकी प्रतिक्रिया सफलतापूर्वक जमा की गई है।',
+      ratings: {
+        1: 'बहुत असंतुष्ट',
+        2: 'असंतुष्ट',
+        3: 'तटस्थ',
+        4: 'संतुष्ट',
+        5: 'बहुत संतुष्ट'
       }
     }
   }

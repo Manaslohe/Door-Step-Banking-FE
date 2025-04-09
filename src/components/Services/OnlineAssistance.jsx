@@ -10,11 +10,15 @@ import { motion } from 'framer-motion';
 import { speak, parseDate, findBestMatch, parseTimeSlot } from '../../utils/voiceUtils';
 import VoiceAssistant from '../Common/VoiceAssistant';
 import { useServiceTranslation } from '../../context/ServiceTranslationContext';
+import Toast from '../Admin/Toast';
+import { useTranslation } from '../../context/TranslationContext';
+import { getServiceDetails } from '../../utils/serviceDescriptions';
 
 const OnlineAssistance = () => {
   const navigate = useNavigate();
   const { user, loading } = useUser();
   const t = useServiceTranslation();
+  const { currentLanguage } = useTranslation();
 
   const banks = [
     { id: 'SBI', name: 'State Bank of India' },
@@ -51,6 +55,7 @@ const OnlineAssistance = () => {
   const [showOtpPopup, setShowOtpPopup] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [activeField, setActiveField] = useState(null);
+  const [toast, setToast] = useState({ show: false, message: '', type: '' });
 
   useEffect(() => {
     if (user) {
@@ -62,6 +67,84 @@ const OnlineAssistance = () => {
       }));
     }
   }, [user]);
+
+  const showToast = (message, type = 'error') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => {
+      setToast({ show: false, message: '', type: '' });
+    }, 5000);
+  };
+
+  const isDateValid = (dateString) => {
+    if (!dateString) return true; // Empty is valid (for form validation)
+    
+    const selectedDate = new Date(dateString);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time part to compare dates only
+    
+    return selectedDate >= today;
+  };
+
+  const isTimeSlotValid = (slot, dateString) => {
+    if (!slot || !dateString) return true; // Empty is valid (for form validation)
+    
+    const selectedDate = new Date(dateString);
+    const today = new Date();
+    
+    // If selected date is future date, all slots are valid
+    if (selectedDate.getDate() !== today.getDate() || 
+        selectedDate.getMonth() !== today.getMonth() || 
+        selectedDate.getFullYear() !== today.getFullYear()) {
+      return true;
+    }
+    
+    // For today, check if time slot is in the future
+    const currentHour = today.getHours();
+    const currentMinutes = today.getMinutes();
+    
+    // Parse the time slot (e.g., "10:00 AM" or "2:30 PM")
+    const [time, period] = slot.split(' ');
+    let [hours, minutes] = time.split(':').map(Number);
+    
+    // Convert to 24-hour format
+    if (period === 'PM' && hours < 12) hours += 12;
+    if (period === 'AM' && hours === 12) hours = 0;
+    
+    // Compare times
+    if (hours < currentHour || (hours === currentHour && minutes <= currentMinutes)) {
+      return false;
+    }
+    
+    return true;
+  };
+
+  const handleFormDataChange = (field, value) => {
+    // Validate date if it's changed
+    if (field === 'date') {
+      if (!isDateValid(value)) {
+        showToast(t.pastDateError, "error");
+        return;
+      }
+      
+      // If date changed, validate currently selected time slot with new date
+      if (formData.slot && !isTimeSlotValid(formData.slot, value)) {
+        setFormData({ ...formData, date: value, slot: '' });
+        showToast(t.timeSlotClearedWarning, "warning");
+        return;
+      }
+    }
+    
+    // Validate time slot if it's changed
+    if (field === 'slot') {
+      if (!isTimeSlotValid(value, formData.date)) {
+        showToast(t.pastTimeError, "error");
+        return;
+      }
+    }
+    
+    // Update form data if validation passes
+    setFormData({ ...formData, [field]: value });
+  };
 
   const calculateProgress = () => {
     const fields = {
@@ -99,9 +182,13 @@ const OnlineAssistance = () => {
         const matchedBank = findBestMatch(value, bankOptions);
         if (matchedBank) {
           processedValue = matchedBank.value;
-          feedbackMessage = `Selected ${banks.find(b => b.id === matchedBank.value).name}`;
+          feedbackMessage = currentLanguage === 'hi' 
+            ? `${banks.find(b => b.id === matchedBank.value).name} चुना गया`
+            : `Selected ${banks.find(b => b.id === matchedBank.value).name}`;
         } else {
-          feedbackMessage = "Sorry, I couldn't find that bank. Please try again.";
+          feedbackMessage = currentLanguage === 'hi'
+            ? "क्षमा करें, मुझे वह बैंक नहीं मिला। कृपया पुनः प्रयास करें।"
+            : "Sorry, I couldn't find that bank. Please try again.";
         }
         break;
 
@@ -109,9 +196,13 @@ const OnlineAssistance = () => {
         processedValue = parseDate(value);
         if (processedValue) {
           const date = new Date(processedValue);
-          feedbackMessage = `Set appointment date to ${date.toLocaleDateString()}`;
+          feedbackMessage = currentLanguage === 'hi'
+            ? `नियुक्ति तिथि ${date.toLocaleDateString()} पर सेट की गई`
+            : `Set appointment date to ${date.toLocaleDateString()}`;
         } else {
-          feedbackMessage = "I couldn't understand the date. Please try again.";
+          feedbackMessage = currentLanguage === 'hi'
+            ? "मैं तारीख को समझ नहीं पाया। कृपया पुनः प्रयास करें।"
+            : "I couldn't understand the date. Please try again.";
         }
         break;
 
@@ -119,9 +210,13 @@ const OnlineAssistance = () => {
         const matchedTimeSlot = parseTimeSlot(value, standardTimeSlots);
         if (matchedTimeSlot) {
           processedValue = matchedTimeSlot;
-          feedbackMessage = `Set appointment time to ${matchedTimeSlot}`;
+          feedbackMessage = currentLanguage === 'hi'
+            ? `अपॉइंटमेंट समय ${matchedTimeSlot} पर सेट किया गया`
+            : `Set appointment time to ${matchedTimeSlot}`;
         } else {
-          feedbackMessage = "I couldn't understand the time. Please say something like '9 AM' or '2 PM'";
+          feedbackMessage = currentLanguage === 'hi'
+            ? "मैं समय को समझ नहीं पाया। कृपया '9 बजे' या 'दोपहर 2 बजे' जैसा कुछ कहें"
+            : "I couldn't understand the time. Please say something like '9 AM' or '2 PM'";
         }
         break;
 
@@ -140,15 +235,21 @@ const OnlineAssistance = () => {
 
         processedValue = modeMap[value] || value;
         if (modeSearchTerms[processedValue]) {
-          feedbackMessage = `Selected ${processedValue === 'telephonic' ? 'phone call' : 'video call'} assistance`;
+          feedbackMessage = currentLanguage === 'hi'
+            ? `${processedValue === 'telephonic' ? 'फोन कॉल' : 'वीडियो कॉल'} सहायता चुनी गई`
+            : `Selected ${processedValue === 'telephonic' ? 'phone call' : 'video call'} assistance`;
         } else {
-          feedbackMessage = "Please select either phone call or video call mode";
+          feedbackMessage = currentLanguage === 'hi'
+            ? "कृपया फोन कॉल या वीडियो कॉल मोड चुनें"
+            : "Please select either phone call or video call mode";
         }
         break;
 
       default:
         processedValue = value;
-        feedbackMessage = `Set ${field} to ${value}`;
+        feedbackMessage = currentLanguage === 'hi'
+            ? `${field} को ${value} पर सेट किया गया`
+            : `Set ${field} to ${value}`;
     }
 
     if (processedValue) {
@@ -158,7 +259,7 @@ const OnlineAssistance = () => {
       }));
     }
 
-    await speak(feedbackMessage);
+    await speak(feedbackMessage, currentLanguage);
   };
 
   const handleFieldFocus = (fieldName) => {
@@ -174,6 +275,9 @@ const OnlineAssistance = () => {
       </DashboardLayout>
     );
   }
+
+  // Get today's date in YYYY-MM-DD format for min attribute
+  const today = new Date().toISOString().split('T')[0];
 
   return (
     <DashboardLayout>
@@ -256,7 +360,7 @@ const OnlineAssistance = () => {
                     <select
                       name="bank"
                       value={formData.bank}
-                      onChange={(e) => setFormData({ ...formData, bank: e.target.value })}
+                      onChange={(e) => handleFormDataChange('bank', e.target.value)}
                       className="w-full pl-10 pr-3 py-3 appearance-none border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
                       required
                       onFocus={() => handleFieldFocus('bank')}
@@ -281,7 +385,8 @@ const OnlineAssistance = () => {
                         type="date"
                         name="date"
                         value={formData.date}
-                        onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                        onChange={(e) => handleFormDataChange('date', e.target.value)}
+                        min={today}
                         className="w-full pl-10 pr-3 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                         required
                         onFocus={() => handleFieldFocus('date')}
@@ -298,7 +403,7 @@ const OnlineAssistance = () => {
                       <select
                         name="slot"
                         value={formData.slot}
-                        onChange={(e) => setFormData({ ...formData, slot: e.target.value })}
+                        onChange={(e) => handleFormDataChange('slot', e.target.value)}
                         className="w-full pl-10 pr-3 py-3 appearance-none border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
                         required
                         onFocus={() => handleFieldFocus('slot')}
@@ -435,6 +540,15 @@ const OnlineAssistance = () => {
               message={t.assistanceSuccess}
             />
           </motion.div>
+        )}
+
+        {/* Toast notification */}
+        {toast.show && (
+          <Toast 
+            message={toast.message} 
+            type={toast.type} 
+            onClose={() => setToast({ ...toast, show: false })} 
+          />
         )}
       </motion.div>
     </DashboardLayout>

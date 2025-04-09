@@ -15,10 +15,19 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import TaskDistribution from './components/TaskDistribution';
+import { useNavigate } from 'react-router-dom';
 
 const AgentSidebar = ({ agentProfile, handleLogout, sidebarOpen, closeSidebar, assignedTasks }) => {
+  const navigate = useNavigate();
+  
   // Get unique service types for the chart
   const serviceTypes = assignedTasks ? [...new Set(assignedTasks.map(task => task.serviceType))] : [];
+
+  // Handle logout and navigation
+  const handleLogoutAndNavigate = () => {
+    handleLogout();
+    navigate('/');
+  };
 
   // Disable body scroll when sidebar is open on mobile
   useEffect(() => {
@@ -110,12 +119,6 @@ const AgentSidebar = ({ agentProfile, handleLogout, sidebarOpen, closeSidebar, a
               active: true,
               gradient: 'from-orange-500 to-orange-600'
             },
-            { 
-              icon: FileText, 
-              text: 'Service Requests', 
-              active: false,
-              gradient: 'from-indigo-500 to-indigo-600'
-            },
           ].map((item, index) => (
             <motion.button
               key={index}
@@ -150,7 +153,7 @@ const AgentSidebar = ({ agentProfile, handleLogout, sidebarOpen, closeSidebar, a
         <motion.button
           whileHover={{ x: 5 }}
           whileTap={{ scale: 0.97 }}
-          onClick={handleLogout}
+          onClick={handleLogoutAndNavigate}
           className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
         >
           <div className="flex items-center space-x-3">

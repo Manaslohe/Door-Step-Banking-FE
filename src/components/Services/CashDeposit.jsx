@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IndianRupeeIcon, ArrowLeft, Clock, Calendar, MapPin, Building2, CreditCard } from 'lucide-react';
 import DashboardLayout from '../Dashboard/DashboardLayout'; // Add this import
@@ -12,6 +12,7 @@ import { formatDateForBackend } from '../../utils/dateUtils';
 import { speak, parseDate, findBestMatch, parseTimeSlot } from '../../utils/voiceUtils';
 import VoiceAssistant from '../Common/VoiceAssistant';
 import { useServiceTranslation } from '../../context/ServiceTranslationContext';
+import Toast from '../Admin/Toast';
 
 const CashDeposit = () => {
   const navigate = useNavigate();
@@ -33,22 +34,102 @@ const CashDeposit = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [activeField, setActiveField] = useState(null);
   const t = useServiceTranslation();
+  const [toast, setToast] = useState({ show: false, message: '', type: '' });
+  const [availableTimeSlots, setAvailableTimeSlots] = useState(standardTimeSlots);
+
+  const getTodayString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  useEffect(() => {
+    if (formData.date === getTodayString()) {
+      const currentHour = new Date().getHours();
+      const currentMinutes = new Date().getMinutes();
+
+      const filteredSlots = standardTimeSlots.filter(slot => {
+        const [time, period] = slot.split(' ');
+        let [hours, minutes] = time.split(':').map(num => parseInt(num, 10));
+
+        if (period === 'PM' && hours !== 12) {
+          hours += 12;
+        } else if (period === 'AM' && hours === 12) {
+          hours = 0;
+        }
+
+        return hours > currentHour + 1 || (hours === currentHour + 1 && minutes >= currentMinutes);
+      });
+
+      setAvailableTimeSlots(filteredSlots);
+
+      if (formData.timeSlot && !filteredSlots.includes(formData.timeSlot)) {
+        setFormData(prev => ({ ...prev, timeSlot: '' }));
+        if (formData.timeSlot) {
+          showToast('Selected time slot is no longer available today. Please choose a different time.', 'warning');
+        }
+      }
+    } else {
+      setAvailableTimeSlots(standardTimeSlots);
+    }
+  }, [formData.date]);
+
+  const showToast = (message, type = 'error') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: '' }), 5000);
+  };
 
   const handleInputChange = (e) => {
-    if (e.target.name === 'bankAccount') {
-      const selectedAccount = bankAccounts.find(acc => acc.id === e.target.value);
+    const { name, value } = e.target;
+
+    if (name === 'bankAccount') {
+      const selectedAccount = bankAccounts.find(acc => acc.id === value);
       setFormData({
         ...formData,
-        bankAccount: e.target.value,
+        bankAccount: value,
         ifscCode: selectedAccount ? selectedAccount.ifsc : '',
       });
+    } else if (name === 'amount') {
+      const numValue = parseInt(value, 10);
+      if (numValue > 25000) {
+        showToast('Amount cannot exceed ₹25,000', 'warning');
+        return;
+      }
+      setFormData({ ...formData, [name]: value });
+    } else if (name === 'date') {
+      const selectedDate = new Date(value);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (selectedDate < today) {
+        showToast('Cannot select a past date', 'error');
+        return;
+      }
+
+      setFormData({ ...formData, [name]: value });
+    } else if (name === 'timeSlot') {
+      setFormData({ ...formData, [name]: value });
     } else {
-      setFormData({ ...formData, [e.target.name]: e.target.value });
+      setFormData({ ...formData, [name]: value });
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const amount = parseInt(formData.amount, 10);
+    if (amount > 25000) {
+      showToast('Amount cannot exceed ₹25,000', 'error');
+      return;
+    }
+
+    if (!formData.date || !formData.timeSlot) {
+      showToast('Please select a valid date and time', 'error');
+      return;
+    }
+
     setShowOtpPopup(true);
   };
 
@@ -64,11 +145,10 @@ const CashDeposit = () => {
           bankAccount: formData.bankAccount,
           date: formData.date,
           timeSlot: formData.timeSlot,
-          address: formData.deliveryAddress, // Map to address
+          address: formData.deliveryAddress,
           amount: formData.amount,
           ifscCode: formData.ifscCode,
           description: `Cash deposit request for amount: ${formData.amount}`,
-          // Additional contact info
           contactNo: user.phone,
           userPhone: user.phone
         }
@@ -118,7 +198,7 @@ const CashDeposit = () => {
             acc.accountNo.slice(-4)
           ]
         }));
-        
+
         const matchedBank = findBestMatch(value, bankOptions);
         if (matchedBank) {
           const selectedAccount = bankAccounts.find(acc => acc.id === matchedBank.value);
@@ -205,7 +285,6 @@ const CashDeposit = () => {
             animate={{ opacity: 1, y: 0 }}
             className="bg-white rounded-xl shadow-lg border"
           >
-            {/* Update Voice Assistant Section */}
             <div className="flex items-center justify-between gap-4 p-4 border-b">
               <h2 className="text-lg font-semibold">{t.cashDeposit}</h2>
               <VoiceAssistant 
@@ -216,7 +295,6 @@ const CashDeposit = () => {
               />
             </div>
 
-            {/* Progress Steps */}
             <div className="grid grid-cols-3 border-b">
               {[
                 { key: 'bankDetails', label: t.bankDetails, icon: Building2 },
@@ -253,14 +331,12 @@ const CashDeposit = () => {
               ))}
             </div>
 
-            {/* Form Content */}
             <motion.form 
               onSubmit={handleSubmit}
               className="p-4 sm:p-6 md:p-8"
               layout
             >
               <div className="grid md:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
-                {/* Bank Details Section */}
                 <div className="space-y-4 sm:space-y-6">
                   <div>
                     <label className="block text-sm sm:text-base md:text-lg font-medium text-gray-700 mb-1.5 sm:mb-2">
@@ -298,7 +374,6 @@ const CashDeposit = () => {
                   </div>
                 </div>
 
-                {/* Delivery Details Section */}
                 <div className="space-y-4 sm:space-y-6">
                   <div>
                     <label className="block text-sm sm:text-base md:text-lg font-medium text-gray-700 mb-1.5 sm:mb-2">
@@ -327,6 +402,7 @@ const CashDeposit = () => {
                           type="date"
                           name="date"
                           value={formData.date}
+                          min={getTodayString()}
                           className="w-full pl-10 sm:pl-12 p-3 sm:p-4 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           onChange={handleInputChange}
                           required
@@ -349,7 +425,7 @@ const CashDeposit = () => {
                           onFocus={handleFieldFocus}
                         >
                           <option value="">{t.selectTime}</option>
-                          {standardTimeSlots.map(slot => (
+                          {availableTimeSlots.map(slot => (
                             <option key={slot} value={slot}>{slot}</option>
                           ))}
                         </select>
@@ -358,10 +434,9 @@ const CashDeposit = () => {
                   </div>
                 </div>
 
-                {/* Amount Section - Fixed Structure */}
                 <div className="md:col-span-2">
                   <label className="block text-sm sm:text-base md:text-lg font-medium text-gray-700">
-                    {t.depositAmount}
+                    {t.depositAmount} <span className="text-gray-500 text-sm">(Max ₹25,000)</span>
                   </label>
                   <div className="relative">
                     <IndianRupeeIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 sm:w-6 sm:h-6" />
@@ -372,13 +447,13 @@ const CashDeposit = () => {
                       placeholder="Enter the amount you want to deposit"
                       className="w-full pl-10 sm:pl-12 p-3 sm:p-4 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       onChange={handleInputChange}
+                      max="25000"
                       required
                       onFocus={handleFieldFocus}
                     />
                   </div>
                 </div>
 
-                {/* Submit Button - Responsive */}
                 <motion.button
                   type="submit"
                   whileHover={{ scale: 1.01 }}
@@ -393,7 +468,6 @@ const CashDeposit = () => {
           </motion.div>
         </div>
 
-        {/* Popups with animations */}
         {showOtpPopup && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -418,6 +492,14 @@ const CashDeposit = () => {
               message={t.depositSuccess}
             />
           </motion.div>
+        )}
+
+        {toast.show && (
+          <Toast 
+            message={toast.message} 
+            type={toast.type} 
+            onClose={() => setToast({ ...toast, show: false })} 
+          />
         )}
       </motion.div>
     </DashboardLayout>

@@ -284,6 +284,33 @@ const ServiceDetailsModal = ({ isOpen, onClose, service: initialService, onServi
               </div>
             </div>
           </div>
+
+          {/* Live Agent Tracking - moved here */}
+          <div className="bg-blue-50 rounded-xl p-5 border border-blue-100 mt-4">
+            <h3 className="text-base font-semibold text-blue-900 flex items-center gap-2 mb-3">
+              <MapPin className="w-5 h-5 text-blue-600" />
+              Live Agent Tracking
+            </h3>
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">Agent is en route</p>
+                  <p className="text-sm text-gray-600">
+                    Expected arrival in your time slot
+                  </p>
+                </div>
+              </div>
+              <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                <div className="bg-blue-500 h-full w-2/5 rounded-full"></div>
+              </div>
+              <p className="text-xs text-gray-500 mt-2 text-center">
+                Your agent will reach your location within the scheduled time slot.
+              </p>
+            </div>
+          </div>
         </div>
       );
     } else if (service.status === 'APPROVED') {
@@ -494,6 +521,33 @@ const ServiceDetailsModal = ({ isOpen, onClose, service: initialService, onServi
                               <span className="text-base">Call</span>
                             </button>
                           )}
+                        </div>
+                      </div>
+
+                      {/* Live Agent Tracking - moved here */}
+                      <div className="bg-blue-50 rounded-xl p-5 border border-blue-100 mt-4">
+                        <h3 className="text-base font-semibold text-blue-900 flex items-center gap-2 mb-3">
+                          <MapPin className="w-5 h-5 text-blue-600" />
+                          Live Agent Tracking
+                        </h3>
+                        <div className="bg-white rounded-lg p-4 shadow-sm">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                              <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900">Agent is en route</p>
+                              <p className="text-sm text-gray-600">
+                                Expected arrival in your time slot
+                              </p>
+                            </div>
+                          </div>
+                          <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                            <div className="bg-blue-500 h-full w-2/5 rounded-full"></div>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-2 text-center">
+                            Your agent will reach your location within the scheduled time slot.
+                          </p>
                         </div>
                       </div>
                     </>

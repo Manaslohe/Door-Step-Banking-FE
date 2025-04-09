@@ -85,7 +85,20 @@ export const serviceTranslations = {
     videoCall: 'Google Meet',
     videoCallDesc: 'Video call assistance through Google Meet',
     scheduleAssistance: 'Schedule Assistance',
-    assistanceSuccess: 'Your assistance request has been scheduled successfully!'
+    assistanceSuccess: 'Your assistance request has been scheduled successfully!',
+    contactNumber: 'Contact Number',
+    fullName: 'Full Name',
+
+    // Validation messages for date and time
+    pastDateError: "Cannot select a past date",
+    pastTimeError: "Cannot select a past time slot",
+    timeSlotClearedWarning: "Time slot has been cleared as it's no longer valid for the selected date",
+
+    // Service explanations
+    serviceIntroduction: "Introduction",
+    serviceRequirements: "Requirements",
+    serviceProcess: "Process",
+    serviceNotes: "Important Notes"
   },
   hi: {
     // Common service translations
@@ -161,6 +174,7 @@ export const serviceTranslations = {
     // Online Assistance translations
     onlineAssistance: 'ऑनलाइन बैंकिंग सहायता',
     bankSelection: 'बैंक चयन',
+    schedule: 'समय-सारिणी',
     mode: 'माध्यम',
     assistanceMode: 'सहायता माध्यम चुनें',
     telephonic: 'टेलीफोनिक कॉल',
@@ -168,7 +182,20 @@ export const serviceTranslations = {
     videoCall: 'गूगल मीट',
     videoCallDesc: 'गूगल मीट के माध्यम से वीडियो कॉल सहायता',
     scheduleAssistance: 'सहायता शेड्यूल करें',
-    assistanceSuccess: 'आपका सहायता अनुरोध सफलतापूर्वक शेड्यूल किया गया है!'
+    assistanceSuccess: 'आपका सहायता अनुरोध सफलतापूर्वक शेड्यूल किया गया है!',
+    contactNumber: 'संपर्क नंबर',
+    fullName: 'पूरा नाम',
+
+    // Validation messages for date and time
+    pastDateError: "पिछली तारीख का चयन नहीं कर सकते",
+    pastTimeError: "बीते हुए समय का चयन नहीं कर सकते",
+    timeSlotClearedWarning: "समय स्लॉट को साफ़ कर दिया गया है क्योंकि यह चयनित तिथि के लिए अब मान्य नहीं है",
+
+    // Service explanations
+    serviceIntroduction: "परिचय",
+    serviceRequirements: "आवश्यकताएँ",
+    serviceProcess: "प्रक्रिया",
+    serviceNotes: "महत्वपूर्ण नोट्स"
   }
 };
 

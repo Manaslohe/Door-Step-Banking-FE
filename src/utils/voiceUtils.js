@@ -1,17 +1,104 @@
-export const speak = (text) => {
+export const speak = async (text, language = 'en') => {
   return new Promise((resolve, reject) => {
-    try {
-      // Cancel any ongoing speech first
-      window.speechSynthesis.cancel();
-
-      const utterance = new SpeechSynthesisUtterance(text);
+    if (!text) {
+      resolve();
+      return;
+    }
+    
+    console.log(`VoiceUtils: Speaking in ${language} language: "${text.substring(0, 30)}..."`);
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Set language based on current app language
+    utterance.lang = language === 'hi' ? 'hi-IN' : 'en-US';
+    
+    // Get available voices
+    let voices = window.speechSynthesis.getVoices();
+    
+    // Force load voices if needed
+    if (voices.length === 0) {
+      window.speechSynthesis.getVoices();
+      voices = window.speechSynthesis.getVoices();
+    }
+    
+    // Log available Hindi voices for debugging
+    const hindiVoices = voices.filter(v => 
+      v.lang.includes('hi') || 
+      v.name.toLowerCase().includes('hindi')
+    );
+    console.log('Hindi voices available:', hindiVoices.map(v => `${v.name} (${v.lang})`));
+    
+    let selectedVoice = null;
+    
+    if (language === 'hi') {
+      // For Hindi, try to find a Hindi voice
+      for (const voiceCheck of [
+        // Try exact language match first
+        v => v.lang === 'hi-IN',
+        // Try any Hindi language code
+        v => v.lang.includes('hi'),
+        // Try name includes Hindi
+        v => v.name.toLowerCase().includes('hindi'),
+        // Fallback to any Indian voice
+        v => v.lang.includes('in-')
+      ]) {
+        selectedVoice = voices.find(voiceCheck);
+        if (selectedVoice) break;
+      }
       
-      utterance.onend = () => resolve();
-      utterance.onerror = (error) => reject(error);
-
-      window.speechSynthesis.speak(utterance);
-    } catch (error) {
+      // If still no voice, use any voice but force Hindi language
+      if (!selectedVoice && voices.length > 0) {
+        selectedVoice = voices[0];
+      }
+    } else {
+      // For English, try to find a good English voice
+      selectedVoice = voices.find(v => v.lang === 'en-US') || 
+                      voices.find(v => v.lang.includes('en'));
+    }
+    
+    // Log selected voice
+    if (selectedVoice) {
+      console.log(`Selected ${language} voice: ${selectedVoice.name} (${selectedVoice.lang})`);
+      utterance.voice = selectedVoice;
+    } else {
+      console.log(`No voice found for ${language}, using default browser voice`);
+    }
+    
+    // Force Hindi language code if that's the selected language
+    utterance.lang = language === 'hi' ? 'hi-IN' : 'en-US';
+    
+    // Adjust parameters for better clarity
+    utterance.rate = language === 'hi' ? 0.85 : 1;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0; // Maximum volume
+    
+    // Handle completion
+    utterance.onend = () => {
+      resolve();
+    };
+    
+    // Handle errors
+    utterance.onerror = (error) => {
+      console.error('Speech synthesis error:', error);
       reject(error);
+    };
+    
+    // Create a dummy utterance to "prime" the speech engine
+    if (language === 'hi') {
+      const primeUtterance = new SpeechSynthesisUtterance("नमस्ते");
+      primeUtterance.lang = 'hi-IN';
+      if (selectedVoice) primeUtterance.voice = selectedVoice;
+      primeUtterance.volume = 0; // Silent
+      window.speechSynthesis.speak(primeUtterance);
+      
+      // Cancel the prime utterance after a brief moment
+      setTimeout(() => {
+        window.speechSynthesis.cancel();
+        // Now speak the actual text
+        window.speechSynthesis.speak(utterance);
+      }, 50);
+    } else {
+      window.speechSynthesis.speak(utterance);
     }
   });
 };

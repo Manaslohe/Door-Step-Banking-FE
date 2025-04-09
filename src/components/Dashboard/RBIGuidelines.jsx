@@ -58,10 +58,6 @@ const RBIGuidelines = () => {
                 <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{t.navigation.rbiGuidelines}</h1>
               </div>
               <div className="flex items-center gap-3">
-                <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
-                  <Download className="w-4 h-4" />
-                  {t.rbiGuidelinesPage.downloadPDF}
-                </button>
                 <a 
                   href="https://www.rbi.org.in"
                   target="_blank"

@@ -14,7 +14,7 @@ const LanguageSwitcher = () => {
       <button
         onClick={handleToggle}
         className={`w-12 h-6 rounded-full p-1 transition-colors duration-200 ease-in-out ${
-          currentLanguage === 'hi' ? 'bg-blue-400' : 'bg-gray-400'
+          currentLanguage === 'hi' ? 'bg-green-400' : 'bg-gray-400'
         }`}
       >
         <div

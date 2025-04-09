@@ -19,7 +19,6 @@ const DocumentService = () => {
   const [activeField, setActiveField] = useState(null);
   const t = useServiceTranslation();
   
-  // Add document type options
   const documentTypes = [
     { value: 'general', label: 'General Documents' },
     { value: 'kyc', label: 'KYC Documents' },
@@ -35,22 +34,28 @@ const DocumentService = () => {
     timeSlot: '',
     contactNumber: '',
     bankAccount: '',
-    documentType: 'general', // Set default document type
+    documentType: 'general',
   });
 
   const bankAccounts = linkedBankAccounts;
 
-  const timeSlots = [
-    "09:00 AM - 11:00 AM",
-    "11:00 AM - 01:00 PM",
-    "02:00 PM - 04:00 PM",
-    "04:00 PM - 06:00 PM"
-  ];
-
-  // Get tomorrow's date as minimum date
+  const today = new Date();
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
-  const minDate = tomorrow.toISOString().split('T')[0];
+  const minDate = today.toISOString().split('T')[0];
+
+  const getAvailableTimeSlots = () => {
+    if (formData.date === today.toISOString().split('T')[0]) {
+      const currentHour = today.getHours();
+      return standardTimeSlots.filter(slot => {
+        const slotStartHour = parseInt(slot.split(':')[0]);
+        const isPM = slot.includes('PM') && slotStartHour !== 12;
+        const hour24 = isPM ? slotStartHour + 12 : slotStartHour;
+        return hour24 > currentHour + 1;
+      });
+    }
+    return standardTimeSlots;
+  };
 
   useEffect(() => {
     if (user) {
@@ -63,6 +68,13 @@ const DocumentService = () => {
     }
   }, [user]);
 
+  useEffect(() => {
+    const availableSlots = getAvailableTimeSlots();
+    if (formData.timeSlot && !availableSlots.includes(formData.timeSlot)) {
+      setFormData(prev => ({ ...prev, timeSlot: '' }));
+    }
+  }, [formData.date]);
+
   const [showOtpPopup, setShowOtpPopup] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const { createServiceRequest } = useServiceRequest();
@@ -70,7 +82,6 @@ const DocumentService = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // Validate required fields
     const requiredFields = ['bankAccount', 'date', 'timeSlot'];
     const addressField = selectedService === 'collect' ? 'collectionAddress' : 'deliveryAddress';
     requiredFields.push(addressField);
@@ -82,16 +93,27 @@ const DocumentService = () => {
       return;
     }
 
-    // Validate date
-    if (new Date(formData.date) < new Date()) {
-      alert('Please select a future date');
+    const selectedDate = new Date(formData.date);
+    selectedDate.setHours(0, 0, 0, 0);
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+    
+    if (selectedDate < currentDate) {
+      alert('Please select today or a future date');
       return;
+    }
+
+    if (selectedDate.getTime() === currentDate.getTime()) {
+      const availableSlots = getAvailableTimeSlots();
+      if (!availableSlots.includes(formData.timeSlot)) {
+        alert('Please select a valid future time slot');
+        return;
+      }
     }
 
     setShowOtpPopup(true);
   };
 
-  // Update handleOtpVerification to include documentType
   const handleOtpVerification = async () => {
     try {
       if (!user?.phone) {
@@ -101,7 +123,6 @@ const DocumentService = () => {
       const serviceType = selectedService === 'collect' ? 'DOCUMENT_COLLECTION' : 'DOCUMENT_DELIVERY';
       const selectedAccount = bankAccounts.find(acc => acc.id === formData.bankAccount);
       
-      // Simplified request structure - all fields at root level
       const requestData = {
         serviceType,
         phone: user.phone,
@@ -250,7 +271,7 @@ const DocumentService = () => {
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="p-3 sm:p-4 h-[calc(95vh-100px)] overflow-y-auto bg-gray-50" // Reduced padding
+        className="p-3 sm:p-4 h-[calc(95vh-100px)] overflow-y-auto bg-gray-50"
       >
         <div className="max-w-6xl mx-auto">
           <motion.div
@@ -258,7 +279,6 @@ const DocumentService = () => {
             animate={{ opacity: 1, y: 0 }}
             className="bg-white rounded-xl shadow-lg border"
           >
-            {/* Add Voice Assistant */}
             <div className="flex items-center justify-between p-4 border-b">
               <h2 className="text-lg font-semibold">
                 {t.documentService} - {selectedService === 'collect' ? t.collection : t.delivery}
@@ -272,7 +292,6 @@ const DocumentService = () => {
               />
             </div>
 
-            {/* Service Type Toggle - Updated styling */}
             <div className="p-4 sm:p-5 border-b">
               <div className="flex gap-4 max-w-md mx-auto bg-gray-100 p-2 rounded-xl">
                 <motion.button 
@@ -304,7 +323,6 @@ const DocumentService = () => {
               </div>
             </div>
 
-            {/* Progress Steps - Updated text sizes */}
             <div className="grid grid-cols-3 border-b">
               {[
                 { key: 'serviceType', label: t.bankDetails, icon: Building2 },
@@ -316,7 +334,7 @@ const DocumentService = () => {
                   animate={{ 
                     backgroundColor: calculateProgress()[step.key] ? 'rgb(239 246 255)' : 'transparent',
                   }}
-                  className={`p-3 sm:p-4 ${index !== 2 ? 'border-r' : ''}`} // Reduced padding
+                  className={`p-3 sm:p-4 ${index !== 2 ? 'border-r' : ''}`}
                 >
                   <div className="flex items-center gap-3">
                     <motion.div
@@ -340,14 +358,12 @@ const DocumentService = () => {
               ))}
             </div>
 
-            {/* Form Content - Updated text sizes and spacing */}
             <motion.form 
               onSubmit={handleSubmit}
-              className="p-4 sm:p-5" // Reduced padding
+              className="p-4 sm:p-5"
               layout
             >
-              <div className="grid md:grid-cols-2 gap-4 sm:gap-5"> {/* Reduced gap */}
-                {/* Bank Account Selection */}
+              <div className="grid md:grid-cols-2 gap-4 sm:gap-5">
                 <div className="md:col-span-2">
                   <label className="block text-base font-medium text-gray-700 mb-2">
                     {t.selectBank}
@@ -372,7 +388,6 @@ const DocumentService = () => {
                   </div>
                 </div>
 
-                {/* Document Type Selection */}
                 <div className="md:col-span-2">
                   <label className="block text-base font-medium text-gray-700 mb-2">
                     {t.documentType}
@@ -396,7 +411,6 @@ const DocumentService = () => {
                   </div>
                 </div>
 
-                {/* Address Section */}
                 <div className="md:col-span-2">
                   <label className="block text-base font-medium text-gray-700 mb-2">
                     {selectedService === 'collect' ? t.collectionAddress : t.deliveryAddress}
@@ -408,7 +422,7 @@ const DocumentService = () => {
                       value={selectedService === 'collect' ? formData.collectionAddress : formData.deliveryAddress}
                       onChange={handleInputChange}
                       className="w-full pl-10 p-3.5 text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
-                      rows="2" // Reduced rows
+                      rows="2"
                       required
                       placeholder={`Enter ${selectedService === 'collect' ? t.collectionAddress : t.deliveryAddress}`}
                       onFocus={() => handleFieldFocus(selectedService === 'collect' ? 'collectionAddress' : 'deliveryAddress')}
@@ -416,7 +430,6 @@ const DocumentService = () => {
                   </div>
                 </div>
 
-                {/* Schedule Section - Reduced margin */}
                 <div className="md:col-span-2 grid md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-base font-medium text-gray-700 mb-2">
@@ -451,7 +464,7 @@ const DocumentService = () => {
                         onFocus={() => handleFieldFocus('timeSlot')}
                       >
                         <option value="">{t.selectTimeSlot}</option>
-                        {standardTimeSlots.map(slot => (
+                        {getAvailableTimeSlots().map(slot => (
                           <option key={slot} value={slot}>{slot}</option>
                         ))}
                       </select>
@@ -459,7 +472,6 @@ const DocumentService = () => {
                   </div>
                 </div>
 
-                {/* Submit Button */}
                 <motion.button
                   type="submit"
                   whileHover={{ scale: 1.01 }}
@@ -474,7 +486,6 @@ const DocumentService = () => {
           </motion.div>
         </div>
 
-        {/* Popups */}
         {showOtpPopup && (
           <motion.div
             initial={{ opacity: 0 }}
