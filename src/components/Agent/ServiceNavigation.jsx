@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { MapPin, Phone, Calendar, Clock, ArrowLeft, Navigation, User, Info, CheckCircle, Loader, X, AlertCircle } from 'lucide-react';
-import OtpVerification from './OtpVerification';
+import OTPVerificationModal from './OTPVerificationModal';
 import axios from 'axios';
+import confetti from 'canvas-confetti';
 
 const ServiceNavigation = () => {
   const { serviceId } = useParams();
@@ -16,6 +17,9 @@ const ServiceNavigation = () => {
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [completeLoading, setCompleteLoading] = useState(false);
   
+  // Toast notification state
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
+
   // Get service data from location state or fetch from API
   const service = location.state?.service || {};
   const destinationAddress = location.state?.destination || '';
@@ -102,7 +106,46 @@ const ServiceNavigation = () => {
     }
   };
 
-  // OTP related functions
+  // Function to trigger confetti
+  const triggerConfetti = () => {
+    const duration = 3000;
+    const end = Date.now() + duration;
+    
+    const colors = ['#4ade80', '#22c55e', '#16a34a']; // Green shades
+    
+    (function frame() {
+      confetti({
+        particleCount: 3,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0 },
+        colors: colors
+      });
+      
+      confetti({
+        particleCount: 3,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1 },
+        colors: colors
+      });
+      
+      if (Date.now() < end) {
+        requestAnimationFrame(frame);
+      }
+    }());
+  };
+  
+  // Function to show toast
+  const showToast = (message, type = 'success', duration = 4000) => {
+    setToast({ visible: true, message, type });
+    
+    // Hide toast after duration
+    setTimeout(() => {
+      setToast({ ...toast, visible: false });
+    }, duration);
+  };
+
   const handleInitiateCompletion = () => {
     if (!service.customerPhone) {
       alert("Customer phone number is not available");
@@ -188,14 +231,20 @@ const ServiceNavigation = () => {
           // Non-critical error, continue
         }
         
-        alert("Service successfully completed!");
-        navigate('/agent/dashboard'); // Navigate back to dashboard
+        // Show toast message and confetti
+        showToast('Service successfully completed!');
+        triggerConfetti();
+        
+        // Navigate back to dashboard after a short delay to show the toast/confetti
+        setTimeout(() => {
+          navigate('/agent/dashboard');
+        }, 2000);
       } else {
         throw new Error(response.data?.message || 'Failed to update service status');
       }
     } catch (error) {
       console.error("Error completing service:", error);
-      alert(`Failed to complete service: ${error.message || 'Unknown error'}`);
+      showToast(`Failed to complete service: ${error.message || 'Unknown error'}`, 'error');
     } finally {
       setCompleteLoading(false);
     }
@@ -411,13 +460,38 @@ const ServiceNavigation = () => {
         </div>
       </div>
 
+      {/* Toast notification */}
+      {toast.visible && (
+        <div className={`fixed top-4 right-4 left-4 max-w-md mx-auto z-50 p-4 rounded-lg shadow-lg transition-all duration-300 transform ${
+          toast.visible ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0'
+        } ${
+          toast.type === 'success' 
+            ? 'bg-green-100 border border-green-200 text-green-800' 
+            : 'bg-red-100 border border-red-200 text-red-800'
+        }`}>
+          <div className="flex items-center">
+            {toast.type === 'success' ? (
+              <CheckCircle className="w-5 h-5 mr-3" />
+            ) : (
+              <AlertCircle className="w-5 h-5 mr-3" />
+            )}
+            <div className="flex-1 font-medium">{toast.message}</div>
+            <button 
+              onClick={() => setToast({ ...toast, visible: false })}
+              className="ml-auto p-1 hover:bg-white/30 rounded-full"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* OTP Verification Modal */}
       {showOtpModal && (
-        <OtpVerification
+        <OTPVerificationModal
           phoneNumber={service.customerPhone}
-          onVerificationSuccess={handleVerificationSuccess}
+          onVerify={handleVerificationSuccess}
           onClose={() => setShowOtpModal(false)}
-          serviceName={service.serviceName || "Service"}
         />
       )}
     </div>
