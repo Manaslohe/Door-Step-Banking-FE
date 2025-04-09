@@ -3,6 +3,7 @@ import { UserCircle, MapPin, Calendar, ArrowRight, IndianRupeeIcon, FileText, Ch
 import { motion, AnimatePresence } from 'framer-motion';
 import ServiceDetailModal from './ServiceDetailModal';
 import AcceptServiceModal from './AcceptServiceModal';
+import OTPVerificationModal from './OTPVerificationModal';
 import { useNavigate } from 'react-router-dom';
 
 const TaskCard = ({ 
@@ -16,6 +17,7 @@ const TaskCard = ({
 }) => {
   const [expanded, setExpanded] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showOtpModal, setShowOtpModal] = useState(false);
   const [showAcceptModal, setShowAcceptModal] = useState(false);
   const navigate = useNavigate();
   
@@ -76,6 +78,15 @@ const TaskCard = ({
         destination: getAddress()
       }
     });
+  };
+  
+  const handleStartService = () => {
+    setShowOtpModal(true);
+  };
+
+  const handleOtpVerified = () => {
+    setShowOtpModal(false);
+    setShowAcceptModal(true);
   };
   
   const isCompleted = 
@@ -278,7 +289,7 @@ const TaskCard = ({
                 
                 {isPending && (
                   <button 
-                    onClick={() => setShowAcceptModal(true)}
+                    onClick={handleStartService}
                     className="flex-1 py-3 px-4 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center shadow-sm"
                   >
                     <span>Start Service</span>
@@ -316,6 +327,16 @@ const TaskCard = ({
             onClose={() => setShowDetailModal(false)}
             formatDateTime={formatDateTime}
             formatPhoneNumber={formatPhoneNumber}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* OTP Verification Modal */}
+      <AnimatePresence>
+        {showOtpModal && (
+          <OTPVerificationModal
+            onClose={() => setShowOtpModal(false)}
+            onVerify={handleOtpVerified}
           />
         )}
       </AnimatePresence>
