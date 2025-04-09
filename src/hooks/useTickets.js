@@ -26,6 +26,37 @@ export const useTickets = (userId) => {
     }
   };
 
+  const fetchAllTickets = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // Get admin token
+      const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        throw new Error('Admin authentication required');
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets`, {
+        headers: {
+          'Authorization': `Bearer ${adminToken}`
+        }
+      });
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to fetch tickets');
+      }
+      
+      setTickets(data.tickets || []);
+    } catch (err) {
+      console.error('Error fetching tickets:', err);
+      setError(handleApiError(err));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const fetchTicket = async (ticketId) => {
     setIsLoading(true);
     setError(null);
@@ -36,6 +67,47 @@ export const useTickets = (userId) => {
       const errorMessage = handleApiError(err);
       setError(errorMessage);
       throw new Error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateTicketStatus = async (ticketId, status) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        throw new Error('Admin authentication required');
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets/${ticketId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`
+        },
+        body: JSON.stringify({ status })
+      });
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to update ticket status');
+      }
+
+      // Update the ticket in the tickets array
+      setTickets(prev => 
+        prev.map(ticket => 
+          ticket._id === ticketId ? data.ticket : ticket
+        )
+      );
+
+      return data.ticket;
+    } catch (err) {
+      console.error('Error updating ticket status:', err);
+      setError(handleApiError(err));
+      throw err;
     } finally {
       setIsLoading(false);
     }
@@ -90,6 +162,12 @@ export const useTickets = (userId) => {
   useEffect(() => {
     if (userId) {
       fetchUserTickets();
+    } else {
+      // If no userId is provided, assume we're in admin mode and fetch all tickets
+      const adminToken = localStorage.getItem('adminToken');
+      if (adminToken) {
+        fetchAllTickets();
+      }
     }
   }, [userId]);
 
@@ -100,6 +178,7 @@ export const useTickets = (userId) => {
     error,
     submitTicket,
     fetchTicket,
-    refreshTickets: fetchUserTickets
+    updateTicketStatus,
+    refreshTickets: userId ? fetchUserTickets : fetchAllTickets
   };
 };

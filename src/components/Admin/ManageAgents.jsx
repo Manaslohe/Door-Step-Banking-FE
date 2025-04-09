@@ -6,8 +6,8 @@ import {
   AlertCircle,
   Loader2
 } from 'lucide-react';
-import Sidebar from './Sidebar';
 import { fetchWithAdminAuth } from '../../utils/adminApi';
+import AdminLayout from './AdminLayout';
 
 const ManageAgents = () => {
   const navigate = useNavigate();
@@ -188,108 +188,108 @@ const ManageAgents = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <Sidebar />
-      
-      {/* Main Content */}
-      <div className="flex-1 p-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">Manage Agents</h1>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700"
-          >
-            <UserPlus className="w-5 h-5" />
-            <span>Add Agent</span>
-          </button>
+    <AdminLayout>
+      <div className="flex flex-col h-full">
+        {/* Main Content */}
+        <div className="flex-1">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold text-gray-800">Manage Agents</h1>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700"
+            >
+              <UserPlus className="w-5 h-5" />
+              <span>Add Agent</span>
+            </button>
+          </div>
+
+          {error && (
+            <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 flex items-start">
+              <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 mr-2" />
+              <p className="text-red-600">{error}</p>
+            </div>
+          )}
+
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            </div>
+          ) : agents.length === 0 ? (
+            <div className="text-center text-gray-500 mt-8">
+              No agents found
+            </div>
+          ) : (
+            renderAgentTable()
+          )}
         </div>
 
-        {error && (
-          <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 flex items-start">
-            <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 mr-2" />
-            <p className="text-red-600">{error}</p>
+        {/* Add Agent Modal */}
+        {showAddModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl p-6 max-w-md w-full">
+              <h2 className="text-xl font-bold mb-4">Add New Agent</h2>
+              <form onSubmit={handleAddAgent} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">User ID</label>
+                  <input
+                    type="text"
+                    value={newAgent.userId}
+                    onChange={(e) => setNewAgent({...newAgent, userId: e.target.value})}
+                    className="mt-1 w-full rounded-lg border border-gray-300 p-2"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Full Name</label>
+                  <input
+                    type="text"
+                    value={newAgent.name}
+                    onChange={(e) => setNewAgent({...newAgent, name: e.target.value})}
+                    className="mt-1 w-full rounded-lg border border-gray-300 p-2"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Phone Number</label>
+                  <input
+                    type="tel"
+                    value={newAgent.phoneNumber}
+                    onChange={(e) => setNewAgent({...newAgent, phoneNumber: e.target.value})}
+                    className="mt-1 w-full rounded-lg border border-gray-300 p-2"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Password</label>
+                  <input
+                    type="password"
+                    value={newAgent.password}
+                    onChange={(e) => setNewAgent({...newAgent, password: e.target.value})}
+                    className="mt-1 w-full rounded-lg border border-gray-300 p-2"
+                    required
+                  />
+                </div>
+                <div className="flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    Add Agent
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        )}
-
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-          </div>
-        ) : agents.length === 0 ? (
-          <div className="text-center text-gray-500 mt-8">
-            No agents found
-          </div>
-        ) : (
-          renderAgentTable()
         )}
       </div>
-
-      {/* Add Agent Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full">
-            <h2 className="text-xl font-bold mb-4">Add New Agent</h2>
-            <form onSubmit={handleAddAgent} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">User ID</label>
-                <input
-                  type="text"
-                  value={newAgent.userId}
-                  onChange={(e) => setNewAgent({...newAgent, userId: e.target.value})}
-                  className="mt-1 w-full rounded-lg border border-gray-300 p-2"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Full Name</label>
-                <input
-                  type="text"
-                  value={newAgent.name}
-                  onChange={(e) => setNewAgent({...newAgent, name: e.target.value})}
-                  className="mt-1 w-full rounded-lg border border-gray-300 p-2"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Phone Number</label>
-                <input
-                  type="tel"
-                  value={newAgent.phoneNumber}
-                  onChange={(e) => setNewAgent({...newAgent, phoneNumber: e.target.value})}
-                  className="mt-1 w-full rounded-lg border border-gray-300 p-2"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Password</label>
-                <input
-                  type="password"
-                  value={newAgent.password}
-                  onChange={(e) => setNewAgent({...newAgent, password: e.target.value})}
-                  className="mt-1 w-full rounded-lg border border-gray-300 p-2"
-                  required
-                />
-              </div>
-              <div className="flex justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  Add Agent
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
+    </AdminLayout>
   );
 };
 

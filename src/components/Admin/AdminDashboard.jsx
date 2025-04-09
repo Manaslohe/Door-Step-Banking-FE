@@ -4,7 +4,7 @@ import {
   Filter, Calendar, AlertCircle, IndianRupee, XCircle
 } from 'lucide-react';
 import ServiceDetails from './ServiceDetails';
-import Sidebar from './Sidebar';
+import AdminLayout from './AdminLayout';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import ServiceCard from './ServiceCard';
 
@@ -248,65 +248,61 @@ const AdminDashboard = () => {
   );
 
   return (
-    <div className="h-screen bg-gray-50 flex overflow-hidden">
-      <Sidebar />
-      
-      <div className="flex-1 flex flex-col overflow-hidden">
+    <AdminLayout>
+      <div className="flex flex-col h-full">
         {headerSection}
 
-        <main className="flex-1 overflow-y-auto p-6">
-          {error && (
-            <div className="mb-4 p-4 rounded-lg bg-red-50 border border-red-200 flex items-start">
-              <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 mr-2" />
-              <p className="text-red-600">{error}</p>
+        {error && (
+          <div className="mb-4 p-4 rounded-lg bg-red-50 border border-red-200 flex items-start">
+            <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 mr-2" />
+            <p className="text-red-600">{error}</p>
+          </div>
+        )}
+
+        {filterSection}
+
+        {/* Services Table */}
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-800">Recent Services</h2>
+          </div>
+          {loading ? (
+            <LoadingSpinner />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Service Details</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">User Info</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredServices.map((service) => (
+                    <ServiceCard
+                      key={service._id}
+                      service={service}
+                      onClick={handleServiceClick}
+                    />
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
+        </div>
 
-          {filterSection}
-
-          {/* Services Table */}
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-800">Recent Services</h2>
-            </div>
-            {loading ? (
-              <LoadingSpinner />
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Service Details</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">User Info</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredServices.map((service) => (
-                      <ServiceCard
-                        key={service._id}
-                        service={service}
-                        onClick={handleServiceClick}
-                      />
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </main>
+        {selectedService && (
+          <ServiceDetails 
+            serviceId={selectedService}
+            onClose={() => setSelectedService(null)}
+            onUpdate={refreshServices}
+          />
+        )}
       </div>
-
-      {selectedService && (
-        <ServiceDetails 
-          serviceId={selectedService}
-          onClose={() => setSelectedService(null)}
-          onUpdate={refreshServices}
-        />
-      )}
-    </div>
+    </AdminLayout>
   );
 };
 

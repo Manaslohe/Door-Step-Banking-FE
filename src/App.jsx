@@ -21,6 +21,8 @@ import AdminDashboard from './components/Admin/AdminDashboard';
 import AgentLogin from './components/Agent/AgentLogin';
 import AgentDashboard from './components/Agent/AgentDashboard';
 import ManageAgents from './components/Admin/ManageAgents';
+import TicketTracker from './components/Admin/TicketTracker';
+import FraudDetection from './components/Admin/FraudDetection';
 import TrackService from './components/Track/TrackService';
 import TrackTicket from './components/Track/TrackTicket';
 import { auth } from './utils/auth';
@@ -60,8 +62,12 @@ function App() {
             </Route>
 
             {/* Admin protected routes */}
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
-            <Route path="/admin/manage-agents" element={<ManageAgents />} />
+            <Route element={<AdminProtectedRoute />}>
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              <Route path="/admin/manage-agents" element={<ManageAgents />} />
+              <Route path="/admin/ticket-tracker" element={<TicketTracker />} />
+              <Route path="/admin/fraud-detection" element={<FraudDetection />} />
+            </Route>
 
             {/* Agent protected routes */}
             <Route element={<AgentProtectedRoute />}>
@@ -91,6 +97,17 @@ const ProtectedRoute = () => {
     return <Navigate to="/" replace />;
   }
 
+  return <Outlet />;
+};
+
+// Admin Protected Route
+const AdminProtectedRoute = () => {
+  const adminToken = localStorage.getItem('adminToken');
+  
+  if (!adminToken) {
+    return <Navigate to="/admin-login" replace />;
+  }
+  
   return <Outlet />;
 };
 
